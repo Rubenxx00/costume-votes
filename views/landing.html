@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Costume Party · Vote</title>
+<link rel="stylesheet" href="/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🎃</text></svg>">
+</head>
+<body>
+<div class="wrap narrow">
+  <header class="top">
+    <div>
+      <h1>🎃 <span id="event">Costume Party</span></h1>
+      <p class="sub">Three categories. One vote each. No voting for yourself.</p>
+    </div>
+  </header>
+
+  <div class="card">
+    <label for="token">Your token</label>
+    <input id="token" class="mono" placeholder="e.g. K7F2-9QX4" autocapitalize="characters"
+           autocorrect="off" spellcheck="false" autocomplete="off" inputmode="text">
+    <div class="row tight" style="margin-top:12px">
+      <button class="primary" id="go" style="flex:1">Start voting</button>
+    </div>
+    <div id="msg" class="msg"></div>
+    <p class="sub" style="margin-top:14px">Lost your card? The host can re-print your token from the guest list.</p>
+  </div>
+
+  <div id="status" class="card hidden"></div>
+</div>
+<script src="/landing.js"></script>
+</body>
+</html>

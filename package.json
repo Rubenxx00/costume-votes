@@ -1,0 +1,21 @@
+{
+  "name": "costume-votes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Token-based voting platform for a home costume party",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "bash test/run.sh"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.2.1",
+    "sharp": "^0.35.5"
+  }
+}

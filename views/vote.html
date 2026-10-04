@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vote · Costume Party</title>
+<link rel="stylesheet" href="/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🎃</text></svg>">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>🎃 <span id="event">Costume Party</span></h1>
+      <p class="sub" id="who">Checking your token…</p>
+    </div>
+    <div style="text-align:right">
+      <div id="closeLine" class="sub"></div>
+      <a class="btn small" href="/results" id="resultsLink">Results</a>
+      <button class="small" id="signout">Not you?</button>
+    </div>
+  </header>
+
+  <div id="alert" class="msg"></div>
+  <div id="body"></div>
+
+  <div class="card hidden" id="doneCard" style="text-align:center">
+    <h2>🎉 All done!</h2>
+    <p class="sub">Your votes are in. Stick around — results at closing time.</p>
+  </div>
+
+</div>
+<script src="/lightbox.js"></script>
+<script src="/vote.js"></script>
+</body>
+</html>

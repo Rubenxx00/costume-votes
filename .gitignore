@@ -1,0 +1,5 @@
+data/
+node_modules/
+test/demo-tokens.json
+*.log
+.DS_Store

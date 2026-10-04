@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin · Costume Party</title>
+<link rel="stylesheet" href="/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🎃</text></svg>">
+</head>
+<body>
+<div class="wrap narrow">
+  <div class="card" style="margin-top:12vh">
+    <h1 style="font-size:24px">🎃 Host login</h1>
+    <p class="sub">Admin only — guests don't need a password.</p>
+    <label for="pw">Admin password</label>
+    <input id="pw" type="password" autocomplete="current-password" autofocus>
+    <button class="primary" id="go" style="width:100%;margin-top:16px">Sign in</button>
+    <div id="msg" class="msg"></div>
+  </div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+$('go').addEventListener('click', async () => {
+  const pw = $('pw').value;
+  if (!pw) return;
+  const res = await fetch('/api/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pw }),
+  });
+  if (res.ok) return (location.href = '/admin');
+  $('msg').className = 'msg err';
+  $('msg').textContent = 'Wrong password';
+});
+$('pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('go').click(); });
+</script>
+</body>
+</html>

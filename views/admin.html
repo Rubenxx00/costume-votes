@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin console · Costume Party</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>🎃 <span id="event">Costume Party</span> <span class="badge" id="votingBadge">…</span></h1>
+      <p class="sub">Host console — <a href="/results" target="_blank">results board ↗</a></p>
+    </div>
+    <div class="row tight">
+      <button class="small" id="refresh">Refresh</button>
+      <button class="small" id="logout">Log out</button>
+    </div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <nav class="tabs" id="tabs" style="margin-top:22px">
+    <button data-tab="roster" aria-selected="true">1 · Guest roster</button>
+    <button data-tab="onboard" aria-selected="false">2 · Onboard costumes</button>
+    <button data-tab="tokens" aria-selected="false">3 · Tokens</button>
+    <button data-tab="results" aria-selected="false">4 · Results</button>
+    <button data-tab="settings" aria-selected="false">Settings</button>
+  </nav>
+
+  <div id="msg" class="msg"></div>
+
+  <!-- ------------------------------------------------------- roster tab -->
+  <section data-panel="roster">
+    <div class="card">
+      <h2>Load the guest list</h2>
+      <p class="sub">Paste one name per line, or upload a CSV. Extra columns are ignored.</p>
+      <label for="csv">Names (CSV or plain lines)</label>
+      <textarea id="csv" rows="7" placeholder="Alice Rossi&#10;Bob &amp; Carla Neri&#10;Dan Klein"></textarea>
+      <div class="row" style="margin-top:10px">
+        <input type="file" id="file" accept=".csv,.txt,text/csv,text/plain" class="hidden-input">
+        <button id="pickFile">Choose CSV file…</button>
+        <button id="clearCsv" class="small">Clear</button>
+        <button class="primary" id="import" style="flex:0 0 auto">Add guests</button>
+      </div>
+      <div id="importReport"></div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <h2 style="margin:0">Guests</h2>
+        <div class="autocomplete" style="width:240px">
+          <input id="guestFilter" placeholder="Filter names…">
+        </div>
+      </div>
+      <div class="scroll" style="margin-top:12px">
+        <table>
+          <thead><tr><th>Guest</th><th>Costume</th><th>Photo</th><th>Token</th><th></th></tr></thead>
+          <tbody id="guestRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------ onboard tab -->
+  <section data-panel="onboard" class="hidden">
+    <div class="card">
+      <h2>Onboard a costume</h2>
+      <p class="sub">Pick the guest(s), snap a photo, save. Do this as guests arrive.
+        The type is worked out from the headcount — 1 guest is a solo, 2 a couple, 3+ a group.</p>
+
+      <label for="ac">Who is in it? <span id="acHint" class="sub" style="display:inline"></span></label>
+      <div class="autocomplete">
+        <input id="ac" placeholder="Start typing a name…" autocomplete="off" spellcheck="false">
+        <div class="ac-list" id="acList"></div>
+      </div>
+      <div id="chips" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
+
+      <label for="cname">Costume name <span class="sub" style="display:inline">(optional)</span></label>
+      <input id="cname" placeholder="Leave blank to use the guest name(s)">
+
+      <label>Photo</label>
+      <div class="drop" id="drop">Tap to take / choose a photo</div>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" class="hidden">
+      <div class="preview hidden" id="preview">
+        <img id="previewImg" alt="preview">
+        <div>
+          <button class="small" id="retake">Retake</button>
+          <div class="preview-note" id="previewNote"></div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:16px">
+        <button class="primary" id="saveCostume">Save costume</button>
+        <button id="clearForm">Clear form</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Onboarded costumes <span class="badge" id="cCount">0</span></h2>
+      <div class="scroll" style="margin-top:10px">
+        <table>
+          <thead><tr><th></th><th>Costume</th><th>Type</th><th>Members</th><th>Votes</th><th></th></tr></thead>
+          <tbody id="costumeRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------- tokens tab -->
+  <section data-panel="tokens" class="hidden">
+    <div class="card">
+      <h2>Generate tokens</h2>
+      <p class="sub">One token per guest. Print the CSV, cut it up, hand one card per guest.
+         A token lets that guest cast exactly one vote per category.</p>
+      <div class="row">
+        <button class="primary" id="genTokens">Generate tokens for everyone</button>
+        <a class="btn" href="/api/admin/tokens.csv" download>Download tokens CSV</a>
+      </div>
+      <div id="tokenReport"></div>
+    </div>
+    <div class="card">
+      <h2>Tokens at a glance</h2>
+      <div class="scroll" style="margin-top:10px">
+        <table>
+          <thead><tr><th>Token</th><th>Guest</th><th>Costume</th><th>Votes</th><th></th></tr></thead>
+          <tbody id="tokenRows"></tbody>
+        </table>
+      </div>
+      <p class="sub" style="margin-top:10px">“Votes” is a live count per guest — handy for calling people in
+         if someone claims their token didn't work.</p>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------ results tab -->
+  <section data-panel="results" class="hidden">
+    <div class="card">
+      <h2>Live results</h2>
+      <p class="sub" id="turnout"></p>
+      <div id="adminResults"></div>
+    </div>
+    <div class="card">
+      <h2>Danger zone</h2>
+      <div class="row">
+        <button class="danger" id="resetVotes">Delete all votes</button>
+        <a class="btn" href="/results" target="_blank">Open public board ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ----------------------------------------------------- settings tab -->
+  <section data-panel="settings" class="hidden">
+    <div class="card">
+      <h2>Voting window</h2>
+      <label for="closesAt">Voting closes at</label>
+      <input type="datetime-local" id="closesAt">
+      <div class="row" style="margin-top:10px">
+        <button class="primary" id="saveClose">Save close time</button>
+        <button id="closeIn1h">Close in 1 hour</button>
+        <button id="closeNow">Close voting now</button>
+        <button id="reopen">Re-open (no deadline)</button>
+      </div>
+      <p class="sub" style="margin-top:10px">The countdown and the ballot both enforce this server-side,
+         so a guest can't keep voting from a stale screen.</p>
+    </div>
+    <div class="card">
+      <h2>Event</h2>
+      <label for="eventName">Event name (shown to guests)</label>
+      <input id="eventName" placeholder="Costume Party">
+      <button class="primary" id="saveEvent" style="margin-top:12px">Save</button>
+    </div>
+  </section>
+
+</div>
+<script src="/lightbox.js"></script>
+<script src="/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Results · Costume Party</title>
+<link rel="stylesheet" href="/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🏆</text></svg>">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>🏆 <span id="event">Costume Party</span> — Results</h1>
+      <p class="sub" id="turnout"></p>
+    </div>
+    <button class="small" id="reload">Refresh</button>
+  </header>
+
+  <div id="alert" class="msg"></div>
+  <div id="board" style="display:grid;gap:22px"></div>
+
+</div>
+<script src="/lightbox.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const EMOJI = { single: '🧍', couple: '💞', group: '👥' };
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+async function load() {
+  const res = await fetch('/api/results');
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    $('board').innerHTML = '';
+    $('alert').className = 'msg err';
+    $('alert').innerHTML = `${esc(data.error || 'Results are not available')} —
+      <button class="small" onclick="location.reload()">retry</button>`;
+    return;
+  }
+  $('alert').className = 'msg';
+  $('event').textContent = data.event_name || 'Costume Party';
+  document.title = `${data.event_name || 'Costume Party'} · Results`;
+  $('turnout').textContent =
+    `${data.total_votes} votes from ${data.turnout} guests · ` +
+    (data.voting.open ? 'voting still open — these numbers are provisional' : 'voting is closed');
+
+  $('board').innerHTML = data.categories.map((cat) => {
+    const top = cat.results[0]?.votes || 0;
+    const winners = cat.results.filter((r) => r.votes === top);
+    const tie = winners.length > 1;
+    return `<section class="card">
+      <h2>${esc(cat.label)} ${tie && top ? '<span class="badge">tie</span>' : ''}</h2>
+      <div class="podium">
+        ${cat.results.map((r, i) => `
+          <div class="rank ${i === 0 && !tie ? 'first' : ''}">
+            <span class="n">${i + 1}</span>
+            ${r.costume.photo ? `<img src="${esc(r.costume.photo)}" alt="" loading="lazy" class="zoomable"
+                                    data-hd="${esc(r.costume.photo_hd || r.costume.photo)}"
+                                    data-caption="${esc(r.costume.name)}">`
+                               : `<div class="noimg" style="width:48px;height:48px;border-radius:10px;display:grid;place-items:center">${EMOJI[r.costume.kind]}</div>`}
+            <span class="who"><b>${esc(r.costume.name)}</b>
+              <small>${esc(r.costume.members.join(', '))}</small></span>
+            <span class="bar"><i style="width:${top ? (r.votes / top) * 100 : 0}%"></i></span>
+            <b style="min-width:2ch;text-align:right">${r.votes}</b>
+          </div>`).join('') || '<p class="empty">No votes in this category yet.</p>'}
+      </div>
+    </section>`;
+  }).join('');
+}
+
+$('reload').addEventListener('click', load);
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>
