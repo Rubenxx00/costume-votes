@@ -134,7 +134,7 @@ for _ in $(seq 1 20); do
 done
 
 say "$SERVICE is active"
-journalctl -u "$SERVICE" -n 12 --no-pager | grep -E 'running|Guests|Admin|Public|Voting' || true
+journalctl -u "$SERVICE" -n 12 --no-pager | grep -E 'running|Guests|LAN|Admin|Public|Voting|Event' || true
 
 echo
 if [[ -n "$ADMIN_PW" ]]; then
