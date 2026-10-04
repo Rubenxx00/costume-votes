@@ -6,7 +6,13 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=ubuntu
+
+# A dedicated system account, created by deploy/install.sh. Do NOT set this to a
+# login user (the file used to say `ubuntu`, which exists only on Ubuntu images):
+# on any host without that account systemd fails the unit with status=217/USER
+# before the app is even executed.
+User=costume-votes
+Group=costume-votes
 WorkingDirectory=/opt/costume-votes
 
 # The admin password is generated once and stored here (chmod 600).
@@ -14,6 +20,9 @@ WorkingDirectory=/opt/costume-votes
 # `Secure` per request, which is what lets you also use http://<vm-ip>:3000.
 EnvironmentFile=/etc/costume-votes.env
 
+# Absolute path on purpose: systemd does not run a login shell, so a Node that
+# lives on PATH via nvm/asdf will not be found. Adjust if `command -v node` on
+# the host disagrees.
 ExecStart=/usr/bin/node src/server.js
 Restart=on-failure
 RestartSec=3
@@ -27,7 +36,11 @@ ProtectHome=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
-RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+# AF_NETLINK is required, not optional: os.networkInterfaces() goes through
+# getifaddrs(), which is a netlink socket. Without it Node throws
+# `uv_interface_addresses returned Unknown system error 97` (EAFNOSUPPORT) and
+# dies on startup — the app never binds and the unit restart-loops.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
 RestrictNamespaces=yes
 LockPersonality=yes
 MemoryDenyWriteExecute=no

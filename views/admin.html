@@ -184,6 +184,26 @@
       <input id="eventName" placeholder="Costume Party">
       <button class="primary" id="saveEvent" style="margin-top:12px">Save</button>
     </div>
+    <div class="card">
+      <h2>Admin password</h2>
+      <p class="sub">The first-run password is only ever used once. Change it here — the
+         environment variable in <code>/etc/costume-votes.env</code> is read on first boot
+         exclusively and editing it later does nothing.</p>
+      <label for="pwCurrent">Current password</label>
+      <input type="password" id="pwCurrent" autocomplete="current-password">
+      <label for="pwNext" style="margin-top:10px">New password <span class="sub" style="display:inline">(at least 8 characters)</span></label>
+      <input type="password" id="pwNext" autocomplete="new-password">
+      <label for="pwConfirm" style="margin-top:10px">Repeat new password</label>
+      <input type="password" id="pwConfirm" autocomplete="new-password">
+      <label class="check" style="margin-top:12px;display:block">
+        <input type="checkbox" id="pwLogoutOthers" checked>
+        Sign out other devices
+      </label>
+      <p class="sub" style="margin-top:6px">Leave this ticked if you are changing the password
+         because someone may have seen the old one — it invalidates every existing login,
+         not just the password.</p>
+      <button class="primary" id="savePassword" style="margin-top:12px">Change password</button>
+    </div>
   </section>
 
 </div>

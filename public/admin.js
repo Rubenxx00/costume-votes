@@ -541,6 +541,36 @@ $('saveEvent').addEventListener('click', () => {
     .catch((e) => flash(e.message, 'err'));
 });
 
+$('savePassword').addEventListener('click', async () => {
+  const current = $('pwCurrent').value;
+  const next = $('pwNext').value;
+  const confirm = $('pwConfirm').value;
+  const logoutOthers = $('pwLogoutOthers').checked;
+
+  // Validate locally so a typo in the repeat field never reaches the server —
+  // the server can't tell a typo from a deliberate change.
+  if (next.length < 8) return flash('New password must be at least 8 characters.', 'err');
+  if (next !== confirm) return flash('The two new passwords do not match.', 'err');
+  if (!current) return flash('Enter your current password.', 'err');
+
+  const btn = $('savePassword');
+  btn.disabled = true;
+  try {
+    const out = await api('/api/admin/password', {
+      method: 'POST',
+      body: { current, next, logout_others: logoutOthers },
+    });
+    for (const id of ['pwCurrent', 'pwNext', 'pwConfirm']) $(id).value = '';
+    flash(out.sessions_invalidated
+      ? 'Password changed and all other devices signed out.'
+      : 'Password changed.', 'ok');
+  } catch (e) {
+    flash(e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 /* ----------------------------------------------------------------- tabs */
 
 function goTab(name) {

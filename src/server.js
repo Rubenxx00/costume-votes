@@ -86,13 +86,44 @@ app.listen(PORT, () => {
   }
   if (!getSetting('event_name')) setSetting('event_name', 'Costume Party');
   console.log(`\n  Event: ${getSetting('event_name')} · categories: ${CATEGORIES.map((c) => c.label).join(', ')}`);
-  console.log(`  Voting: ${voting.open ? `OPEN${voting.closesAt ? ` until ${new Date(voting.closesAt).toLocaleString()}` : ''}` : `CLOSED at ${new Date(voting.closesAt).toLocaleString()}`}\n`);
+  console.log(`  Voting: ${describeVoting(voting)}\n`);
 });
 
-function localAddresses() {
-  const out = [];
-  for (const list of Object.values(os.networkInterfaces())) {
-    for (const ni of list || []) if (ni.family === 'IPv4' && !ni.internal) out.push(ni.address);
+/**
+ * `closesAt` is null whenever no deadline was ever set, and `new Date(null)` is
+ * the epoch — so a naive template prints "CLOSED at 1/1/1970" on every boot of
+ * a fresh install. Branch on the reason instead.
+ */
+function describeVoting(voting) {
+  if (voting.open) {
+    return `OPEN${voting.closesAt ? ` until ${new Date(voting.closesAt).toLocaleString()}` : ''}`;
   }
-  return out;
+  if (voting.reason === 'deadline-passed' && voting.closesAt) {
+    return `CLOSED — deadline passed at ${new Date(voting.closesAt).toLocaleString()}`;
+  }
+  if (voting.reason === 'closed-by-host') return 'CLOSED by host';
+  return 'CLOSED (not opened yet)';
+}
+
+/**
+ * The LAN hint is a nicety, not a requirement: it only decorates the boot
+ * banner. It must never be able to take the server down.
+ *
+ * It used to. Under a systemd sandbox that omits AF_NETLINK from
+ * RestrictAddressFamilies, getifaddrs() fails and Node throws
+ * `uv_interface_addresses returned Unknown system error 97` (EAFNOSUPPORT) —
+ * which killed the process and left the unit restart-looping with voting
+ * unreachable.
+ */
+function localAddresses() {
+  try {
+    const out = [];
+    for (const list of Object.values(os.networkInterfaces())) {
+      for (const ni of list || []) if (ni.family === 'IPv4' && !ni.internal) out.push(ni.address);
+    }
+    return out;
+  } catch (err) {
+    console.warn(`  (could not enumerate network interfaces: ${err.message})`);
+    return [];
+  }
 }

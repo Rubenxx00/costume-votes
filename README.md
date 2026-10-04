@@ -32,7 +32,10 @@ It prints the admin URL, your LAN IP, and where guests should go:
 ```
 
 If you don't pass `ADMIN_PASSWORD`, a random one is generated and printed **once**
-on first boot. Save it — it's hashed in the database and not recoverable.
+on first boot. `ADMIN_PASSWORD` is read on first boot only — once a password
+exists it is ignored, because the hash is stored in the database. Change it any
+time at **Admin → Settings → Admin password**; it is not recoverable, only
+replaceable.
 
 ### Photos
 
@@ -203,6 +206,7 @@ node test/seed.js http://localhost:4400 demo1234   # 10 guests, 4 costumes, vote
 | `POST` | `/api/vote` | guest | `{token, category, costume_id}`, `undo:"1"` to clear |
 | `GET` | `/api/results` | anyone | 403 until voting closes |
 | `POST` | `/api/admin/login` | admin | Sets the session cookie |
+| `POST` | `/api/admin/password` | admin | `{current, next, logout_others}` — `logout_others` also invalidates every issued session cookie |
 | `GET` | `/api/admin/overview` | admin | Everything the console renders from |
 | `POST` | `/api/admin/guests/import` | admin | `{csv}` — raw CSV text |
 | `GET` | `/api/admin/guests/search?q=` | admin | Autocomplete |

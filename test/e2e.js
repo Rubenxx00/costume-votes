@@ -393,6 +393,60 @@ Ivan Petrov
   ok('vote accepted after re-opening (and own-costume still blocked for Alice)',
     reopened.status === 403 ? true : reopened.status === 200, reopened.text);
 
+  /* ------------------------------------------------------ admin password */
+  // Regression: the password used to be settable only on first boot, since
+  // ensureAdminPassword() bails once the setting exists — leaving a manual
+  // database edit as the only way to rotate it. These tests run last because
+  // they change the credential the rest of the suite logs in with.
+  log('\n── admin password ──');
+  const NEW_PW = 'rotated-password-1';
+  const NEXT_PW = 'rotated-password-2';
+
+  const anonPw = await fetch(BASE + '/api/admin/password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ current: PW, next: 'irrelevant-pw' }),
+  });
+  ok('password change rejects anonymous', anonPw.status === 401, String(anonPw.status));
+
+  ok('wrong current password is refused',
+    (await call('/api/admin/password', { method: 'POST', body: { current: 'not-the-password', next: NEW_PW } })).status === 401);
+  ok('too-short new password is refused',
+    (await call('/api/admin/password', { method: 'POST', body: { current: PW, next: 'short' } })).status === 400);
+  ok('reusing the current password is refused',
+    (await call('/api/admin/password', { method: 'POST', body: { current: PW, next: PW } })).status === 400);
+  ok('a refused change leaves the old password working',
+    (await call('/api/admin/overview')).status === 200);
+
+  ok('password can be changed',
+    (await call('/api/admin/password', { method: 'POST', body: { current: PW, next: NEW_PW, logout_others: false } })).json.ok === true);
+  ok('old password stops working', (await call('/api/admin/login', { method: 'POST', body: { password: PW } })).status === 401);
+  ok('new password works', (await call('/api/admin/login', { method: 'POST', body: { password: NEW_PW } })).status === 200);
+
+  // Rotating the password alone must not leave an already-issued cookie valid:
+  // that is precisely the case when the password leaked.
+  const liveCookie = cookie;
+  ok('existing session survives a plain password change',
+    (await fetch(BASE + '/api/admin/overview', { headers: { cookie: liveCookie } })).status === 200);
+
+  const rotated = await call('/api/admin/password', {
+    method: 'POST', body: { current: NEW_PW, next: NEXT_PW, logout_others: true },
+  });
+  ok('logout_others reports sessions invalidated', rotated.json?.sessions_invalidated === true,
+    JSON.stringify(rotated.json));
+
+  const reissued = cookie;
+  ok('pre-existing cookie is rejected after logout_others',
+    (await fetch(BASE + '/api/admin/overview', { headers: { cookie: liveCookie } })).status === 401);
+  ok('caller is handed a working session after logout_others',
+    (await fetch(BASE + '/api/admin/overview', { headers: { cookie: reissued } })).status === 200);
+  ok('rotated password is the one that works',
+    (await call('/api/admin/login', { method: 'POST', body: { password: NEXT_PW } })).status === 200);
+
+  // Put the credential back so the suite is re-runnable in any order.
+  ok('password restored to the suite default',
+    (await call('/api/admin/password', { method: 'POST', body: { current: NEXT_PW, next: PW, logout_others: false } })).json.ok === true);
+
   log(`\n${fail === 0 ? '✅' : '❌'}  ${pass} passed, ${fail} failed\n`);
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.error('\n💥', e); process.exit(1); });

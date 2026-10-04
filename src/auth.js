@@ -41,6 +41,19 @@ export function changePassword(current, next) {
   return true;
 }
 
+/**
+ * Drop every session cookie that has already been issued.
+ *
+ * The signing key is independent of the password, so changing the password
+ * alone leaves anyone holding a valid cookie logged in — which is exactly
+ * wrong when the reason for the change is that the old one leaked. Rotating
+ * the key invalidates all outstanding cookies, including the caller's, so the
+ * caller re-issues its own session straight afterwards.
+ */
+export function invalidateSessions() {
+  setSetting('session_secret', crypto.randomBytes(32).toString('hex'));
+}
+
 function secret() {
   let s = getSetting('session_secret');
   if (!s) {
