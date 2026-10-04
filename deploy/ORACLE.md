@@ -11,29 +11,51 @@ shape (4 OCPU / 24 GB) is roughly 20× more than this needs.
 
 ## 1. The instance
 
-Create an **Ampere A1** VM in the free tier. On Ubuntu 24.04 a preinstalled Node
-may be too old — this app needs **Node ≥ 22.5** for the built-in `node:sqlite`.
-Either pick the Oracle Linux 8 image with the Node 22+ preinstall option, or
-install it on Ubuntu:
+Create an **Ampere A1** VM in the free tier. This app needs **Node ≥ 22.5** for
+the built-in `node:sqlite`; a preinstalled Node is usually older. Verified
+working on **Oracle Linux 9.8 (aarch64)**, which is the image used below:
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
-sudo apt-get install -y nodejs
+# RHEL family — Oracle Linux, Alma, Rocky, Amazon Linux
+curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo -E bash -
+sudo dnf install -y nodejs git
+
+# Debian family — Ubuntu
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt-get install -y nodejs git
+
 node -v          # must be >= 22.5
 ```
 
 `sharp` ships prebuilt `linux-arm64` binaries, so `npm install` needs no
-compiler on the ARM shape.
+compiler on the ARM shape — confirmed, zero build steps.
 
 ## 2. The app
 
 ```bash
-sudo mkdir -p /opt/costume-votes && sudo chown $USER /opt/costume-votes
+git clone https://github.com/Rubenxx00/costume-votes.git
+cd costume-votes
+sudo ./deploy/install.sh              # add --from-git to clone straight to /opt
+```
+
+The installer creates a dedicated `costume-votes` system account, syncs the
+code to `/opt/costume-votes`, runs `npm ci --omit=dev`, writes
+`/etc/costume-votes.env` with a generated admin password (printed **once**),
+installs the unit, starts it, and fails loudly with the journal if the service
+does not come up. Re-running it upgrades the code and leaves the password and
+database alone.
+
+<details>
+<summary>Doing it by hand instead</summary>
+
+```bash
+sudo useradd --system --home-dir /opt/costume-votes --shell /sbin/nologin costume-votes
+sudo mkdir -p /opt/costume-votes && sudo chown root:root /opt/costume-votes
 # copy the repo here, then:
 cd /opt/costume-votes
-npm ci --omit=dev
+sudo npm ci --omit=dev
 
-sudo install -d -o $USER -g $USER /opt/costume-votes/data
+sudo install -d -o costume-votes -g costume-votes -m 750 /opt/costume-votes/data
 sudo install -m 600 deploy/costume-votes.env.example /etc/costume-votes.env
 sudo editor /etc/costume-votes.env      # set ADMIN_PASSWORD
 
@@ -42,6 +64,19 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now costume-votes
 sudo journalctl -u costume-votes -f     # shows the LAN/admin URLs
 ```
+
+Two things in that unit file are load-bearing, and both used to be wrong:
+
+- **`User=` / `Group=`** must name an account that exists on the host. This is
+  why the installer creates `costume-votes` rather than reusing a login user —
+  the file previously said `ubuntu`, which exists only on Ubuntu images, and
+  systemd fails the unit with `status=217/USER` everywhere else.
+- **`RestrictAddressFamilies` must include `AF_NETLINK`.** `os.networkInterfaces()`
+  goes through `getifaddrs()`, which is a netlink socket. Without it Node throws
+  `uv_interface_addresses returned Unknown system error 97` (EAFNOSUPPORT) at
+  boot, the process dies, and the unit restart-loops with nothing on port 3000.
+
+</details>
 
 ## 3. The tunnel (Cloudflare Tunnel)
 
@@ -58,6 +93,19 @@ sudo cloudflared service install eyJhIjoiXXXXX...
 #      subdomain  votes
 #      domain     example.com
 #      service    http://localhost:3000
+#      path       ← LEAVE THIS EMPTY
+```
+
+**Leave the `Path` field empty.** It is a route prefix, not part of your service
+URL: cloudflared matches it against the request path, which always starts with
+`/`. A path of `v1` (or any value without a leading `/`) therefore matches no
+request at all, everything falls through to the implicit
+`{"service":"http_status:404"}`, and the hostname returns **404 for every URL
+including the one you typed** — while the tunnel itself reports healthy. If you
+see a blanket 404, check the connector's own view of the rule:
+
+```bash
+sudo journalctl -u cloudflared -n 20 | grep -i ingress
 ```
 
 That's the whole deployment. No Oracle security-list change, no nginx, no
@@ -141,6 +189,17 @@ URL can still try guesses. If you want it tighter, add a Cloudflare Zero Trust
 Access policy on the `admin` path so only your identity gets through — or a WAF
 rate-limit rule.
 
+**Change the admin password before the party.** `ADMIN_PASSWORD` in
+`/etc/costume-votes.env` is honoured on **first boot only** — `ensureAdminPassword()`
+skips it once a password exists in the database, so editing the file later does
+nothing. Change it at **Admin → Settings → Admin password**. If you've lost it,
+there is no recovery: reset the `admin_password` row in
+`/opt/costume-votes/data/party.db` and restart.
+
+Changing the password alone leaves already-issued session cookies valid, because
+the cookie signing key is independent of it. Tick **“Sign out other devices”**
+when changing it if the reason is that the old one leaked.
+
 **Mind HSTS if you also test over HTTP.** Once a browser has seen an HSTS policy
 for a hostname it refuses to fall back to plain HTTP for it, so don't expect
 `http://votes.example.com` to work in the same browser afterwards. Use a private
@@ -156,7 +215,7 @@ MB of camera originals.
 
 | Variable | Purpose |
 |---|---|
-| `ADMIN_PASSWORD` | Admin password, applied on first boot only |
+| `ADMIN_PASSWORD` | Admin password, applied on first boot only — change it later at Admin → Settings |
 | `PORT` | HTTP port (default 3000) |
 | `DATA_DIR` | Database + uploads (default `./data`) |
 | `PUBLIC_BASE_URL` | Printed at boot for guests |

@@ -4,7 +4,8 @@ import path from 'node:path';
 import sharp from 'sharp';
 import { UPLOAD_DIR, PHOTO_SIZES, PHOTO_MAX_UPLOAD_BYTES } from '../config.js';
 import {
-  requireAdminApi, checkPassword, issueSession, clearSession, shouldUseSecureCookie,
+  requireAdminApi, checkPassword, changePassword, invalidateSessions,
+  issueSession, clearSession, shouldUseSecureCookie,
 } from '../auth.js';
 import {
   db, newToken, newPhotoName, CATEGORIES, KINDS, deriveKind,
@@ -33,6 +34,45 @@ router.post('/logout', (req, res) => {
 });
 
 router.use(requireAdminApi);
+
+/* --------------------------------------------------------------- password */
+
+const MIN_PASSWORD_LENGTH = 8;
+
+/**
+ * Change the admin password.
+ *
+ * Without this the password could only ever be set on first boot:
+ * `ensureAdminPassword()` returns early once the setting exists, so editing
+ * ADMIN_PASSWORD in the environment afterwards is silently ignored, and the
+ * only other route was a manual edit of the scrypt hash in the database.
+ *
+ * `logout_others` rotates the cookie signing key so every previously issued
+ * session cookie stops verifying. It invalidates this request's own cookie
+ * too, so a fresh one is issued to keep the caller signed in.
+ */
+router.post('/password', (req, res) => {
+  const { current, next, logout_others } = req.body || {};
+
+  if (typeof next !== 'string' || next.length < MIN_PASSWORD_LENGTH) {
+    return res.status(400).json({
+      error: `New password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+    });
+  }
+  if (next === current) {
+    return res.status(400).json({ error: 'New password is the same as the current one' });
+  }
+  if (!changePassword(current, next)) {
+    return res.status(401).json({ error: 'Current password is wrong' });
+  }
+
+  if (logout_others) {
+    invalidateSessions();
+    issueSession(req, res);
+  }
+
+  res.json({ ok: true, sessions_invalidated: Boolean(logout_others) });
+});
 
 /* -------------------------------------------------------------- overview */
 
