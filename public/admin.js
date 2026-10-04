@@ -64,17 +64,45 @@ function computeVoteCounts(tally) {
 
 function paintHeader() {
   $('event').textContent = S.event_name || 'Costume Party';
+  const v = S.voting;
   const badge = $('votingBadge');
-  if (S.voting.open) {
+  if (v.open) {
     badge.className = 'badge ok';
-    badge.textContent = S.voting.closesAt
-      ? `voting open · closes ${new Date(S.voting.closesAt).toLocaleTimeString()}`
+    badge.textContent = v.closesAt
+      ? `voting open · closes ${new Date(v.closesAt).toLocaleTimeString()}`
       : 'voting open · no deadline';
   } else {
     badge.className = 'badge off';
-    badge.textContent = `closed · ${new Date(S.voting.closesAt).toLocaleString()}`;
+    badge.textContent = v.reason === 'deadline-passed' ? 'closed · deadline passed' : 'voting closed';
   }
   document.title = `Admin · ${S.event_name || 'Costume Party'}`;
+  paintGate();
+}
+
+/**
+ * The prominent open/close control. Kept above the tabs because this is the one
+ * action the host performs live, in front of the room.
+ */
+function paintGate() {
+  const v = S.voting;
+  const btn = $('toggleVoting');
+  if (v.open) {
+    btn.textContent = 'Close voting now';
+    btn.className = 'danger';
+    $('gateTitle').textContent = 'Voting is open';
+    $('gateSub').textContent = v.closesAt
+      ? `Guests can vote until ${new Date(v.closesAt).toLocaleString()}.`
+      : 'Guests can vote. It stays open until you close it.';
+  } else {
+    btn.textContent = 'Open voting';
+    btn.className = 'primary';
+    $('gateTitle').textContent = v.reason === 'deadline-passed'
+      ? 'Voting is closed'
+      : 'Voting is closed';
+    $('gateSub').textContent = v.reason === 'deadline-passed'
+      ? 'The deadline has passed. Re-open to let late guests vote, or show the results.'
+      : `Finish the roster and photos, then open voting. ${S.stats.onboarded} of ${S.stats.guests} guests onboarded so far.`;
+  }
 }
 
 function paintStats() {
@@ -477,23 +505,36 @@ async function saveSettings(patch) {
   await load();
 }
 
+$('toggleVoting').addEventListener('click', async () => {
+  const opening = !S.voting.open;
+  const btn = $('toggleVoting');
+  btn.disabled = true;
+  try {
+    await saveSettings({ voting_open: opening });
+    flash(opening ? 'Voting is open — guests can vote now.' : 'Voting closed. Results are public.', 'ok');
+  } catch (e) {
+    flash(e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 $('saveClose').addEventListener('click', () => {
   const v = $('closesAt').value;
-  saveSettings({ closes_at: v ? new Date(v).toISOString() : '' })
-    .then(() => flash(v ? 'Close time saved.' : 'Deadline cleared — voting stays open until you close it.'))
+  saveSettings({ closes_at: v ? new Date(v).toISOString() : '', voting_open: true })
+    .then(() => flash(v
+      ? `Close time saved — voting closes at ${new Date(v).toLocaleString()}.`
+      : 'Deadline cleared — voting is open until you close it by hand.', 'ok'))
     .catch((e) => flash(e.message, 'err'));
 });
-$('closeIn1h').addEventListener('click', () => {
-  saveSettings({ closes_at: new Date(Date.now() + 3600e3).toISOString() })
-    .then(() => flash('Voting will close in 1 hour.'));
-});
-$('closeNow').addEventListener('click', () => {
-  saveSettings({ closes_at: new Date().toISOString() })
-    .then(() => flash('Voting is now closed.'));
-});
-$('reopen').addEventListener('click', () => {
-  saveSettings({ closes_at: '' }).then(() => flash('Voting re-opened with no deadline.', 'ok'));
-});
+
+for (const [id, ms, label] of [['closeIn1h', 3600e3, '1 hour'], ['closeIn30m', 1800e3, '30 minutes']]) {
+  $(id).addEventListener('click', () => {
+    saveSettings({ closes_at: new Date(Date.now() + ms).toISOString(), voting_open: true })
+      .then(() => flash(`Voting is open and will close in ${label}.`, 'ok'))
+      .catch((e) => flash(e.message, 'err'));
+  });
+}
 $('saveEvent').addEventListener('click', () => {
   saveSettings({ event_name: $('eventName').value })
     .then(() => flash('Event name saved.'))

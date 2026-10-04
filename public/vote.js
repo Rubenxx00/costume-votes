@@ -43,8 +43,15 @@ function render() {
   }
 
   if (!voting.open) {
-    $('body').innerHTML = `<div class="card"><h2>Voting is closed</h2>
-      <p class="sub">Thanks for voting. <a href="/results">See the results</a>.</p></div>`;
+    const notStarted = voting.reason === 'not-opened';
+    const heading = notStarted ? 'Voting hasn\'t started yet' : 'Voting is closed';
+    const body = notStarted
+      ? 'The host is still registering costumes. This page will work as soon as they open voting — just reload.'
+      : voting.reason === 'deadline-passed'
+        ? 'The deadline has passed. <a href="/results">See the results</a>.'
+        : 'The host has closed voting. <a href="/results">See the results</a>.';
+    $('body').innerHTML = `<div class="card"><h2>${heading}</h2>
+      <p class="sub">${body}</p></div>`;
     $('doneCard').classList.add('hidden');
     return;
   }

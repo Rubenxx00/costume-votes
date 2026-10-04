@@ -50,7 +50,22 @@ function secret() {
   return s;
 }
 
-export function issueSession(res) {
+/**
+ * `Secure` must be decided per request, not from a static env var.
+ *
+ * Behind Cloudflare every request arrives over HTTPS, so the cookie needs the
+ * flag. But the host will inevitably open http://<vm-ip>:3000/admin while
+ * setting things up, and a `Secure` cookie is silently dropped by the browser
+ * there — the admin would be stuck re-entering a password that "worked".
+ * Deriving it from the actual request means both paths just work.
+ */
+export function shouldUseSecureCookie(req) {
+  if (process.env.FORCE_SECURE_COOKIE === '1') return true;
+  if (process.env.FORCE_INSECURE_COOKIE === '1') return false;
+  return req.secure || String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
+}
+
+export function issueSession(req, res) {
   const payload = JSON.stringify({ exp: Date.now() + SESSION_TTL_MS });
   const body = Buffer.from(payload).toString('base64url');
   const sig = crypto.createHmac('sha256', secret()).update(body).digest('base64url');
@@ -58,8 +73,7 @@ export function issueSession(res) {
     httpOnly: true,
     sameSite: 'lax',
     path: '/',
-    // Secure is required behind an HTTPS tunnel; harmless on localhost.
-    secure: !!ADMIN_SECRET || process.env.FORCE_SECURE_COOKIE === '1',
+    secure: shouldUseSecureCookie(req),
     maxAge: SESSION_TTL_MS,
   });
 }

@@ -21,6 +21,12 @@ async function poll() {
         ? `<h3>Voting is open</h3><p class="sub">Closes <span class="countdown" data-close="${s.voting.closesAt}"></span></p>`
         : `<h3>Voting is open</h3><p class="sub">The host will close voting from the admin console.</p>`;
       tick();
+    } else if (s.voting.reason === 'not-opened') {
+      box.innerHTML = `<h3>Voting hasn't started yet</h3>
+        <p class="sub">The host is still getting everyone registered — keep your token handy.</p>`;
+    } else if (s.voting.reason === 'closed-by-host') {
+      box.innerHTML = `<h3>Voting is closed</h3>
+        <p class="sub">Thanks for voting — the results are on the projector, or <a href="/results">open the board</a>.</p>`;
     } else {
       box.innerHTML = `<h3>Voting has closed</h3>
         <p class="sub">Check the projector for the results — or <a href="/results">open the results board</a>.</p>`;

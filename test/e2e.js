@@ -60,7 +60,39 @@ const log = (s) => console.log(s);
   // but leave the /admin HTML page logged out.
   ok('session cookie is scoped to Path=/', /Path=\/\s*$/.test(rawCookie.trim()) || rawCookie.includes('Path=/'), rawCookie);
   ok('admin HTML page loads when signed in', (await call('/admin')).status === 200);
+  // Deployment regression: behind Cloudflare every request is HTTPS, but the
+  // host also opens http://<vm-ip>:3000/admin. A statically-Secure cookie is
+  // silently dropped there, locking the admin out with no explanation.
+  const login = await fetch(BASE + '/api/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Forwarded-Proto': 'https' },
+    body: JSON.stringify({ password: PW }),
+  });
+  const loginBody = await login.json();
+  ok('login reports whether the session cookie will survive',
+    loginBody.secure_cookie === true, JSON.stringify(loginBody));
+  ok('Secure cookie is set when forwarded as https',
+    /Secure/.test(login.headers.get('set-cookie') || ''), login.headers.get('set-cookie'));
+
+  const plain = await fetch(BASE + '/api/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: PW }),
+  });
+  ok('no Secure flag over plain http, so LAN login still works',
+    !/Secure/.test(plain.headers.get('set-cookie') || ''), plain.headers.get('set-cookie'));
+  ok('plain-http login is not flagged as secure',
+    (await plain.json()).secure_cookie === false);
   ok('admin HTML page blocked when signed out', (await fetch(BASE + '/admin', { redirect: 'manual' })).status === 302);
+
+  log('\n── voting starts closed ──');
+  const initial = await call('/api/status');
+  ok('voting is closed before the host opens it', initial.json.voting.open === false,
+    JSON.stringify(initial.json));
+  ok('the closed reason is not-opened before the host ever opens it',
+    initial.json.voting.reason === 'not-opened', JSON.stringify(initial.json.voting));
+  ok('a vote before opening is refused',
+    (await call('/api/vote', { method: 'POST', body: { token: 'ABCDEFGH', category: 'beautiful', costume_id: 1 } })).status !== 200);
 
   log('\n── guest import ──');
   const csv = `Name,Email
@@ -229,6 +261,14 @@ Ivan Petrov
 
 
 
+  log('\n── open voting ──');
+  ok('admin can open voting',
+    (await call('/api/admin/settings', { method: 'POST', body: { voting_open: true } }))
+      .json.voting.open === true);
+  ok('status now reports open',
+    (await call('/api/status')).json.voting.open === true);
+  ok('no deadline means open-ended', (await call('/api/status')).json.voting.closesAt === null);
+
   log('\n── voting ──');
   const me = await call(`/api/me?token=${tok['Alice Rossi']}`);
   ok('bad token 404s', (await call('/api/me?token=NOPENOPE')).status === 404);
@@ -285,6 +325,8 @@ Ivan Petrov
 
   await call('/api/admin/settings', { method: 'POST', body: { closes_at: new Date(Date.now() + 3600e3).toISOString() } });
   ok('status shows deadline', (await call('/api/status')).json.voting.closesAt != null);
+  ok('setting a deadline on a closed ballot opens it',
+    (await call('/api/status')).json.voting.open === true);
 
   await call('/api/admin/settings', { method: 'POST', body: { closes_at: new Date(Date.now() - 1000).toISOString() } });
   ok('voting closed after deadline', (await call('/api/status')).json.voting.open === false);
@@ -333,9 +375,20 @@ Ivan Petrov
     JSON.stringify(dup.json?.costume?.members));
   await call(`/api/admin/costumes/${dup.json.costume.id}/delete`, { method: 'POST' });
 
-  log('\n── re-open ──');
-  await call('/api/admin/settings', { method: 'POST', body: { closes_at: '' } });
-  ok('voting reopened', (await call('/api/status')).json.voting.open === true);
+  log('\n── manual open / close ──');
+  ok('admin can close voting by hand',
+    (await call('/api/admin/settings', { method: 'POST', body: { voting_open: false } }))
+      .json.voting.open === false);
+  // Once voting has been opened, closing it must read as "closed", never as
+  // "hasn't started" — a guest arriving late would wait forever.
+  ok('closed by hand reports closed-by-host, not not-opened',
+    (await call('/api/status')).json.voting.reason === 'closed-by-host',
+    JSON.stringify((await call('/api/status')).json.voting));
+  ok('a vote is refused while shut',
+    (await call('/api/vote', { method: 'POST', body: { token: tok['Eve Adams'], category: 'scary', costume_id: soloId } })).status === 403);
+
+  await call('/api/admin/settings', { method: 'POST', body: { closes_at: '', voting_open: true } });
+  ok('reopened with no deadline', (await call('/api/status')).json.voting.open === true);
   const reopened = await call('/api/vote', { method: 'POST', body: { token: tok['Eve Adams'], category: 'scary', costume_id: soloId } });
   ok('vote accepted after re-opening (and own-costume still blocked for Alice)',
     reopened.status === 403 ? true : reopened.status === 200, reopened.text);

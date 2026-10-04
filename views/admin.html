@@ -22,6 +22,18 @@
 
   <div class="stats" id="stats"></div>
 
+  <div class="card" id="gateCard">
+    <div class="row" style="align-items:center;gap:16px">
+      <div style="flex:2;min-width:220px">
+        <h2 id="gateTitle" style="margin:0">Voting is closed</h2>
+        <p class="sub" id="gateSub">Finish the roster and photos, then open voting.</p>
+      </div>
+      <div style="flex:0 0 auto;text-align:right">
+        <button class="primary" id="toggleVoting">Open voting</button>
+      </div>
+    </div>
+  </div>
+
   <nav class="tabs" id="tabs" style="margin-top:22px">
     <button data-tab="roster" aria-selected="true">1 · Guest roster</button>
     <button data-tab="onboard" aria-selected="false">2 · Onboard costumes</button>
@@ -154,13 +166,14 @@
   <section data-panel="settings" class="hidden">
     <div class="card">
       <h2>Voting window</h2>
-      <label for="closesAt">Voting closes at</label>
+      <p class="sub">Voting stays closed until you press “Open voting”. A deadline is optional —
+         set one and voting closes by itself at that time.</p>
+      <label for="closesAt">Voting closes at <span class="sub" style="display:inline">(optional)</span></label>
       <input type="datetime-local" id="closesAt">
       <div class="row" style="margin-top:10px">
-        <button class="primary" id="saveClose">Save close time</button>
+        <button class="primary" id="saveClose">Save &amp; open</button>
         <button id="closeIn1h">Close in 1 hour</button>
-        <button id="closeNow">Close voting now</button>
-        <button id="reopen">Re-open (no deadline)</button>
+        <button id="closeIn30m">Close in 30 min</button>
       </div>
       <p class="sub" style="margin-top:10px">The countdown and the ballot both enforce this server-side,
          so a guest can't keep voting from a stale screen.</p>

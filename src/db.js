@@ -180,10 +180,50 @@ export function tally() {
   };
 }
 
+/**
+ * Voting is closed until the host opens it.
+ *
+ * Setup happens while guests are still arriving and photos are being taken, so
+ * the default is closed: the host opens voting once the roster is done, then
+ * either sets a deadline or closes it by hand. A deadline alone is not enough
+ * to open the gate — both must hold.
+ *
+ * Absent setting means closed, not open. That is the safe direction to fail in:
+ * an unreached or half-configured database must never hand out live voting.
+ */
 export function isVotingOpen() {
+  const opened = getSetting('voting_open') === '1';
+
+  if (!opened) {
+    // "never opened" and "opened, then closed" read very differently to a guest
+    // holding a token: one means wait, the other means you're done. Once voting
+    // has been opened the fact is remembered, so keep telling them which.
+    return {
+      open: false,
+      closesAt: null,
+      reason: getSetting('voting_ever_opened') === '1' ? 'closed-by-host' : 'not-opened',
+    };
+  }
+
   const close = getSetting('voting_closes_at');
-  if (!close) return { open: true, closesAt: null };
+  if (!close) return { open: true, closesAt: null, reason: null };
   const t = new Date(close).getTime();
-  if (Number.isNaN(t)) return { open: true, closesAt: null };
-  return { open: Date.now() < t, closesAt: new Date(t).toISOString() };
+  // An unparseable deadline must not strand the party with voting stuck shut.
+  if (Number.isNaN(t)) return { open: true, closesAt: null, reason: null };
+  const open = Date.now() < t;
+  return {
+    open,
+    closesAt: new Date(t).toISOString(),
+    reason: open ? null : 'deadline-passed',
+  };
 }
+
+/**
+ * `ever_opened` is sticky: it flips the first time voting is opened and never
+ * clears, so guests who arrive after the host closes voting are told voting is
+ * closed rather than never started.
+ */
+export const setVotingOpen = (open) => {
+  setSetting('voting_open', open ? '1' : '0');
+  if (open && getSetting('voting_ever_opened') !== '1') setSetting('voting_ever_opened', '1');
+};

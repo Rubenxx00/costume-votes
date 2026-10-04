@@ -3,10 +3,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
 import { UPLOAD_DIR, PHOTO_SIZES, PHOTO_MAX_UPLOAD_BYTES } from '../config.js';
-import { requireAdminApi, checkPassword, issueSession, clearSession } from '../auth.js';
+import {
+  requireAdminApi, checkPassword, issueSession, clearSession, shouldUseSecureCookie,
+} from '../auth.js';
 import {
   db, newToken, newPhotoName, CATEGORIES, KINDS, deriveKind,
-  getSetting, setSetting, isVotingOpen,
+  getSetting, setSetting, isVotingOpen, setVotingOpen,
   allCostumes, allGuests, membersOf, guestById, costumeById, tally,
 } from '../db.js';
 
@@ -19,8 +21,10 @@ router.post('/login', (req, res) => {
   if (!password || !checkPassword(password)) {
     return res.status(401).json({ error: 'Wrong password' });
   }
-  issueSession(res);
-  res.json({ ok: true });
+  issueSession(req, res);
+  // The host needs to know if this login will actually stick, because a
+  // browser silently drops a `Secure` cookie sent over plain HTTP.
+  res.json({ ok: true, secure_cookie: shouldUseSecureCookie(req), https: !!req.secure });
 });
 
 router.post('/logout', (req, res) => {
@@ -294,15 +298,26 @@ router.get('/tokens.csv', (req, res) => {
 /* --------------------------------------------------------------- voting */
 
 router.post('/settings', (req, res) => {
-  const { closes_at, event_name } = req.body || {};
+  const { closes_at, event_name, voting_open } = req.body || {};
+
   if (closes_at !== undefined) {
     if (closes_at === null || closes_at === '') setSetting('voting_closes_at', '');
     else {
       const d = new Date(closes_at);
       if (Number.isNaN(d.getTime())) return res.status(400).json({ error: 'Bad close time' });
       setSetting('voting_closes_at', d.toISOString());
+      // Setting a deadline is an intent to vote, not just to schedule one, so
+      // it opens the gate. Otherwise the host picks a closing time and the
+      // ballot stays shut, which is a confusing dead end.
+      if (voting_open === undefined) setVotingOpen(true);
     }
   }
+
+  if (voting_open !== undefined) {
+    const open = voting_open === true || voting_open === 'true' || voting_open === 1 || voting_open === '1';
+    setVotingOpen(open);
+  }
+
   if (event_name !== undefined) setSetting('event_name', String(event_name).trim());
   res.json({ ok: true, voting: isVotingOpen(), event_name: getSetting('event_name') });
 });

@@ -23,14 +23,28 @@ const $ = (id) => document.getElementById(id);
 $('go').addEventListener('click', async () => {
   const pw = $('pw').value;
   if (!pw) return;
+  $('go').disabled = true;
   const res = await fetch('/api/admin/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password: pw }),
   });
-  if (res.ok) return (location.href = '/admin');
-  $('msg').className = 'msg err';
-  $('msg').textContent = 'Wrong password';
+  $('go').disabled = false;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    $('msg').className = 'msg err';
+    $('msg').textContent = data.error || 'Wrong password';
+    return;
+  }
+  // Behind a tunnel this page is HTTPS and everything is fine. On a bare
+  // http:// IP the browser would silently drop the session cookie, so the
+  // admin would land back here in a loop — say so instead.
+  if (data.secure_cookie && !data.https) {
+    $('msg').className = 'msg info';
+    $('msg').textContent = 'Signed in, but this is a plain-HTTP address and the ' +
+      'session cookie will be dropped. Use your https:// address to reach the console.';
+  }
+  location.href = '/admin';
 });
 $('pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('go').click(); });
 </script>

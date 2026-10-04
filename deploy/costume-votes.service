@@ -1,0 +1,45 @@
+[Unit]
+Description=Costume Votes
+Documentation=https://github.com/Rubenxx00/costume-votes
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/costume-votes
+
+# The admin password is generated once and stored here (chmod 600).
+# ADMIN_SECRET signs the session cookie; leave it unset and the app decides
+# `Secure` per request, which is what lets you also use http://<vm-ip>:3000.
+EnvironmentFile=/etc/costume-votes.env
+
+ExecStart=/usr/bin/node src/server.js
+Restart=on-failure
+RestartSec=3
+
+# Node needs no more privileges than this.
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=no
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+# The only writable path: the database and uploaded photos.
+ReadWritePaths=/opt/costume-votes/data
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=costume-votes
+
+[Install]
+WantedBy=multi-user.target
