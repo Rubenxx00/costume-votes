@@ -188,9 +188,26 @@ body.lightbox-open { overflow: hidden; }
 /* ---------------------------------------------------------------- ballot */
 .ballot { display: grid; gap: 22px; }
 .cat { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px; background: #ffffff08; }
-.cat.collapsed .grid, .cat.collapsed .sub { display: none; }
+.cat.collapsed .grid, .cat.collapsed .pickline { display: none; }
 .cat.collapsed { padding-bottom: 12px; }
-.cat h2 { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.cat h2 { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+/* Graphic collapse/expand arrow — a triangle that rotates as the section
+   opens. Lowered onto the baseline so it sits on the label line. */
+.cat h2 .chev { flex: 0 0 auto; display: inline-block; }
+.cat h2 .chev::before {
+  content: ""; display: inline-block;
+  border-left: 5px solid transparent; border-right: 5px solid transparent;
+  border-top: 7px solid var(--muted);
+  transition: transform .18s ease;
+}
+.cat:not(.collapsed) h2 .chev::before { transform: translateY(4px) rotate(180deg); }
+.cat h2 .ttl { flex: 1; min-width: 0; }
+.cat h2 .badge { flex: 0 0 auto; }
+.intro { margin: -4px 0 16px; }
+.pickline { margin-top: 10px; color: var(--muted); font-size: 13px; }
+.pickline b { color: var(--text); }
+.pickline .final { color: var(--green); font-weight: 700; }
+.badge.pick { color: var(--accent-2); border-color: color-mix(in srgb, var(--accent-2) 50%, transparent); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-top: 12px; }
 .pick {
   position: relative; text-align: left; padding: 0; overflow: hidden;
@@ -216,7 +233,24 @@ body.lightbox-open { overflow: hidden; }
   background: var(--accent); color: #2a1206; width: 26px; height: 26px;
   border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 15px;
 }
-.pick:disabled { opacity: .38; }
+/* A vote that's been submitted is locked in — show it in green, never
+   re-pickable. */
+.pick.locked[aria-pressed="true"] { border-color: var(--green); box-shadow: 0 0 0 3px #35c07f33; }
+.pick.locked[aria-pressed="true"]::after { background: var(--green); color: #07231a; }
+.pick:disabled { opacity: .8; }
+
+/* Fixed submit bar — follows the guest so they can always hit "Vote". */
+.castbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--bg-2) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line);
+}
+.castbar .cast-hint { font-size: 13px; color: var(--muted); }
+.btn.cast { font-size: 16px; padding: 12px 22px; }
+body.has-castbar .wrap { padding-bottom: 108px; }
 
 /* --------------------------------------------------------------- results */
 .podium { display: flex; flex-direction: column; gap: 10px; }
