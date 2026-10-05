@@ -296,17 +296,13 @@ Ivan Petrov
   const alice1 = await call('/api/vote', { method: 'POST', body: { token: tok['Alice Rossi'], category: 'beautiful', costume_id: groupId } });
   ok('alice votes group for beautiful', alice1.status === 200);
   ok('remaining = 2 after one vote', alice1.json.remaining === 2);
-  const alice2 = await call('/api/vote', { method: 'POST', body: { token: tok['Alice Rossi'], category: 'beautiful', costume_id: coupleId } });
-  ok('re-vote in same category overwrites (still 2 left)', alice2.json.remaining === 2);
-  ok('vote switched to couple',
-    alice2.json.ballot.votes.beautiful.costume_id === coupleId);
+  // Vote is final — re-vote in same category is rejected.
+  const aliceRe = await call('/api/vote', { method: 'POST', body: { token: tok['Alice Rossi'], category: 'beautiful', costume_id: coupleId } });
+  ok('re-vote rejected (final)', aliceRe.status === 409);
 
   await call('/api/vote', { method: 'POST', body: { token: tok['Alice Rossi'], category: 'scary', costume_id: groupId } });
   const alice3 = await call('/api/vote', { method: 'POST', body: { token: tok['Alice Rossi'], category: 'original', costume_id: coupleId } });
   ok('after 3 categories remaining = 0', alice3.json.remaining === 0);
-  const undo = await call('/api/vote', { method: 'POST', body: { token: tok['Alice Rossi'], category: 'original', costume_id: 0, undo: '1' } });
-  ok('undo frees a category', undo.json.remaining === 1);
-  await call('/api/vote', { method: 'POST', body: { token: tok['Alice Rossi'], category: 'original', costume_id: coupleId } });
 
   ok('unknown category rejected',
     (await call('/api/vote', { method: 'POST', body: { token: tok['Alice Rossi'], category: 'best', costume_id: coupleId } })).status === 400);

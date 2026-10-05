@@ -1,0 +1,613 @@
+openapi: 3.0.1
+info:
+  title: Costume Votes API
+  version: '1.0'
+  description: API for managing costume party voting
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+paths:
+  /api/me:
+    get:
+      summary: Get ballot information for a guest
+      operationId: getBallot
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Token from guest card (e.g. K7F2-9QX4)
+      responses:
+        '200':
+          description: Ballot data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BallotResponse'
+        '404':
+          description: Unknown token
+  /api/vote:
+    post:
+      summary: Cast or change a vote (or undo one)
+      operationId: castVote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoteRequest'
+      responses:
+        '200':
+          description: Vote result with remaining count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoteResponse'
+        '400':
+          description: Unknown category
+        '403':
+          description: Voting closed or own costume
+  /api/status:
+    get:
+      summary: Get voting status
+      operationId: getStatus
+      responses:
+        '200':
+          description: Voting status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+  /api/admin/login:
+    post:
+      summary: Admin login
+      operationId: adminLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminLoginRequest'
+      responses:
+        '200':
+          description: Login result with secure cookie info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminLoginResponse'
+        '401':
+          description: Wrong password
+  /api/admin/logout:
+    post:
+      summary: Admin logout
+      operationId: adminLogout
+      responses:
+        '200':
+          description: Success
+  /api/admin/password:
+    post:
+      summary: Change admin password
+      operationId: changePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password change result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangePasswordResponse'
+        '400':
+          description: New password too short
+        '401':
+          description: Wrong current password
+  /api/admin/overview:
+    get:
+      summary: Get admin overview
+      operationId: adminOverview
+      responses:
+        '200':
+          description: Overview data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OverviewResponse'
+  /api/admin/guests/import:
+    post:
+      summary: Import guests from CSV
+      operationId: importGuests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                csv:
+                  type: string
+                  description: CSV or plain text, one name per line
+              required: [csv]
+      responses:
+        '200':
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportGuestsResponse'
+  /api/admin/guests/search:
+    get:
+      summary: Search guests by name prefix
+      operationId: searchGuests
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Name prefix to search for
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  guests:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GuestSummary'
+  /api/admin/guests:
+    get:
+      summary: List all guests
+      operationId: listGuests
+      responses:
+        '200':
+          description: List of guests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GuestDetail'
+  /api/admin/guests/{id}/delete:
+    post:
+      summary: Delete a guest
+      operationId: deleteGuest
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            description: Guest ID
+      responses:
+        '200':
+          description: Deletion result
+  /api/admin/costumes:
+    get:
+      summary: List all costumes
+      operationId: listCostumes
+      responses:
+        '200':
+          description: List of costumes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CostumeDetail'
+    post:
+      summary: Create or update a costume
+      operationId: createCostume
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Costume name (optional, defaults from guests)
+                guest_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: Guest IDs to include
+                photo:
+                  type: string
+                  format: string
+                  description: Base64 data URL of photo
+      responses:
+        '200':
+          description: Created/updated costume
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostumeDetail'
+        '400':
+          description: Validation error
+  /api/admin/costumes/{id}/update:
+    post:
+      summary: Update a costume
+      operationId: updateCostume
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            description: Costume ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: New costume name
+                photo:
+                  type: string
+                  format: string
+                  description: New photo data URL
+                detach:
+                  type: array
+                  items:
+                    type: integer
+                  description: Guest IDs to detach
+      responses:
+        '200':
+          description: Updated costume
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostumeDetail'
+        '404':
+          description: Costume not found
+  /api/admin/costumes/{id}/delete:
+    post:
+      summary: Delete a costume
+      operationId: deleteCostume
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            description: Costume ID
+      responses:
+        '200':
+          description: Deletion confirmed
+  /api/admin/tokens/generate:
+    post:
+      summary: Generate tokens for guests without tokens
+      operationId: generateTokens
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                regenerate:
+                  type: boolean
+                  description: Regenerate even if guest already has a token
+      responses:
+        '200':
+          description: Token generation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenGenerateResponse'
+  /api/admin/tokens.csv:
+    get:
+      summary: Download tokens CSV
+      operationId: tokensCSV
+      responses:
+        '200':
+          description: CSV file with tokens
+          headers:
+            Content-Type:
+              description: text/csv charset
+              schema:
+                type: string
+              example: text/csv; charset=utf-8
+            Content-Disposition:
+              description: Filename hint
+              schema:
+                type: string
+              example: attachment; filename="costume-vote-tokens.csv"
+  /api/admin/results:
+    get:
+      summary: Get public results
+      operationId: getResults
+      parameters:
+        - name: reveal
+          in: query
+          required: false
+          schema:
+            type: boolean
+            description: Reveal results early
+      responses:
+        '200':
+          description: Tally results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultsResponse'
+        '403':
+          description: Results hidden
+  /api/admin/settings:
+    post:
+      summary: Set voting window and event name
+      operationId: setSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                closes_at:
+                  type: string
+                  format: date-time
+                  description: When voting closes
+                event_name:
+                  type: string
+                  description: Event name
+                voting_open:
+                  type: boolean
+                  description: Open or close voting
+      responses:
+        '200':
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsResponse'
+  /api/admin/votes/reset:
+    post:
+      summary: Delete all votes
+      operationId: resetVotes
+      responses:
+        '200':
+          description: All votes deleted
+components:
+  schemas:
+    BallotResponse:
+      type: object
+      properties:
+        guest:
+          $ref: '#/components/schemas/GuestSummary'
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryInfo'
+        voting:
+          $ref: '#/components/schemas/VotingStatus'
+        votes_cast:
+          type: integer
+        remaining:
+          type: integer
+    VoteRequest:
+      type: object
+      required: [category, costume_id]
+      properties:
+        category:
+          type: string
+          enum: [beautiful, scary, couple]
+        costume_id:
+          type: integer
+        undo:
+          type: string
+          enum: ['1']
+    VoteResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        votes_cast:
+          type: integer
+        remaining:
+          type: integer
+        ballot:
+          $ref: '#/components/schemas/BallotSummary'
+    StatusResponse:
+      type: object
+      properties:
+        voting:
+          $ref: '#/components/schemas/VotingStatus'
+        event_name:
+          type: string
+    VotingStatus:
+      type: object
+      properties:
+        open:
+          type: boolean
+        reason:
+          type: string
+          enum: [not-opened, deadline-passed, closed-by-host]
+        closesAt:
+          type: string
+          format: date-time
+    AdminLoginRequest:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+    AdminLoginResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        secure_cookie:
+          type: boolean
+        https:
+          type: boolean
+    ChangePasswordRequest:
+      type: object
+      required: [current, next]
+      properties:
+        current:
+          type: string
+        next:
+          type: string
+        logout_others:
+          type: boolean
+    ChangePasswordResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        sessions_invalidated:
+          type: boolean
+    OverviewResponse:
+      type: object
+      properties:
+        guests:
+          type: integer
+        onboarded:
+          type: integer
+        costumes:
+          type: integer
+        tokens:
+          type: integer
+        voted:
+          type: integer
+    ImportGuestsResponse:
+      type: object
+      properties:
+        added:
+          type: array
+          items:
+            type: string
+        skipped:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              reason:
+                type: string
+        total:
+          type: integer
+    GuestSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        token:
+          type: string
+        onboarded:
+          type: boolean
+        costume_id:
+          type: integer
+    GuestDetail:
+      allOf:
+        - $ref: '#/components/schemas/GuestSummary'
+        - type: object
+          properties:
+            costume:
+              $ref: '#/components/schemas/CostumeSummary'
+    CostumeSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        kind:
+          type: string
+          enum: [single, couple, group]
+        members:
+          type: integer
+    CostumeDetail:
+      allOf:
+        - $ref: '#/components/schemas/CostumeSummary'
+        - type: object
+          properties:
+            photo:
+              type: string
+            photo_hd:
+              type: string
+    BallotSummary:
+      type: object
+      properties:
+        costumes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostumeSummary'
+        votes:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              costume_id:
+                type: integer
+    CategoryInfo:
+      type: object
+      properties:
+        key:
+          type: string
+          enum: [beautiful, scary, couple]
+        label:
+          type: string
+    TokenGenerateResponse:
+      type: object
+      properties:
+        issued:
+          type: integer
+        message:
+          type: string
+    SettingsResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        voting:
+          $ref: '#/components/schemas/VotingStatus'
+        event_name:
+          type: string
+    ResultsResponse:
+      type: object
+      properties:
+        voting:
+          $ref: '#/components/schemas/VotingStatus'
+        event_name:
+          type: string
+        turnout:
+          type: integer
+        total_votes:
+          type: integer
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryResults'
+    CategoryResults:
+      type: object
+      properties:
+        label:
+          type: string
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostumeResult'
+    CostumeResult:
+      type: object
+      properties:
+        costume:
+          $ref: '#/components/schemas/CostumeDetail'
+        votes:
+          type: integer

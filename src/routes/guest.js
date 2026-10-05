@@ -56,27 +56,22 @@ router.post('/vote', (req, res) => {
   const guest = guestFromToken(req, res);
   if (!guest) return;
 
-  if (guest.costume_id == null)
-    return res.status(409).json({ error: 'You have not been registered for a costume yet' });
-
-  // Clearing a vote: no costume is needed, so this runs before costume checks.
-  const undo = String(req.body?.undo || '') === '1';
-  if (undo) {
-    db.prepare('DELETE FROM votes WHERE guest_id = ? AND category = ?').run(guest.id, category);
-    const n = db.prepare('SELECT COUNT(*) AS n FROM votes WHERE guest_id = ?').get(guest.id).n;
-    return res.json({ ok: true, votes_cast: n, remaining: 3 - n, ballot: ballotFor(guest.id) });
-  }
-
   const costume = costumeById(Number(costume_id));
   if (!costume) return res.status(404).json({ error: 'Unknown costume' });
 
+  // Voters may vote without a costume (pure voter) — they are allowed.
+  // Own-costume checks: owner + members.
   if (costume.id === guest.costume_id)
     return res.status(403).json({ error: 'You cannot vote for your own costume' });
-
-  // Membership is authoritative — re-check every member, not just the owner,
-  // so late edits to a couple/group can't be voted on by a member.
   if (membersOf(costume.id).some((m) => m.id === guest.id))
     return res.status(403).json({ error: 'You cannot vote for your own costume' });
+
+  // Enforce one vote per category (final).
+  const alreadyVoted = db.prepare('SELECT 1 FROM votes WHERE guest_id = ? AND category = ?').get(guest.id, category);
+  if (alreadyVoted) {
+    return res.status(409).json({ error: 'You have already voted in this category' });
+  }
+  // No undo support – vote is final.
 
   db.prepare(
     `INSERT INTO votes (guest_id, costume_id, category) VALUES (?, ?, ?)

@@ -126,7 +126,7 @@ function thumbCard(c, isOwn) {
 
 function card(c, isChosen) {
   // The preview is what every ballot loads; photo_hd is only read on tap.
-  return `<button class="pick" data-cat-card="${c.id}" aria-pressed="${isChosen}">
+  return `<button class="pick" data-cat-card="${c.id}" data-vote="${c.id}" aria-pressed="${isChosen}">
     ${c.photo
       ? `<img class="thumb zoomable" src="${esc(c.photo)}" alt="${esc(c.name)}" loading="lazy"
               data-hd="${esc(c.photo_hd || c.photo)}" data-caption="${esc(c.name)}">`
@@ -179,11 +179,11 @@ function tick() {
   window.__tick = setInterval(update, 1000);
 }
 
-async function vote(category, costumeId, undo = false) {
+async function vote(category, costumeId) {
   try {
     const out = await api('/api/vote', {
       method: 'POST',
-      body: { token: TOKEN, category, costume_id: costumeId, undo: undo ? '1' : '0' },
+      body: { token: TOKEN, category, costume_id: costumeId },
     });
     state.ballot = out.ballot;
     state.costumes = out.ballot.costumes;
@@ -218,16 +218,12 @@ document.addEventListener('click', (e) => {
     window.costumeLightbox?.open(zoom.dataset.hd, zoom.dataset.caption || zoom.alt);
     return;
   }
-  const card = e.target.closest('[data-cat-card]');
-  if (card) {
-    const section = card.closest('[data-cat]');
-    const category = section.dataset.cat;
-    const id = Number(card.dataset.catCard);
-    const current = state.votes[category]?.costume_id;
-    return vote(category, id, current === id);
+  const voteBtn = e.target.closest('[data-vote]');
+  if (voteBtn) {
+    const category = voteBtn.closest('[data-cat]').dataset.cat;
+    const id = Number(voteBtn.dataset.vote);
+    return vote(category, id);
   }
-  const undo = e.target.closest('[data-undo]');
-  if (undo) return vote(undo.dataset.undo, 0, true);
 });
 
 $('signout').addEventListener('click', () => {
