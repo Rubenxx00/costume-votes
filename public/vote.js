@@ -3,7 +3,15 @@ const EMOJI = { single: '🧍', couple: '💞', group: '👥' };
 
 let TOKEN = sessionStorage.getItem('cv_token') || '';
 let state = null;
-let expandedCategory = null; // Track which category section is expanded
+let expandedCategory = null;
+// If opened via link with ?token=..., grab it before anything else.
+const urlToken = new URLSearchParams(location.search).get('token');
+if (urlToken) {
+  TOKEN = String(urlToken).toUpperCase().replace(/[^A-Z0-9]/g, '');
+  sessionStorage.setItem('cv_token', TOKEN);
+  // Clean URL so refresh/reload doesn't duplicate; keep user's bookmark untouched via replace.
+  history.replaceState(null, '', location.pathname + location.hash);
+}
 
 function alertBox(text, kind = 'err') {
   const el = $('alert');

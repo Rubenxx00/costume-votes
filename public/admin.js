@@ -405,7 +405,7 @@ function paintCostumes() {
       <td>${c.photo ? `<img src="${esc(c.photo)}" alt="" loading="lazy" class="zoomable"
               data-hd="${esc(c.photo_hd || c.photo)}" data-caption="${esc(c.name)}">` : `<div class="noimg" style="width:56px;height:56px;border-radius:10px;display:grid;place-items:center">${EMOJI[c.kind]}</div>`}</td>
       <td><b>${esc(c.name)}</b></td>
-      <td><span class="badge kind">${EMOJI[c.kind]} ${esc(c.kind)}${c.kind === 'group' ? ` of ${c.members.length}` : ''}</span></td>
+      <td><span class="badge kind">${EMOJI[c.kind]}${c.kind === 'group' ? ` ${c.members.length}` : ''}</span></td>
       <td>${esc(c.members.map((m) => m.name).join(', ') || '—')}</td>
       <td><span class="badge">${n}</span></td>
       <td style="text-align:right"><button class="small danger" data-delcostume="${c.id}">Delete</button></td>
