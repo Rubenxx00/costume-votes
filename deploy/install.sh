@@ -79,7 +79,7 @@ else
     | tar -C "$APP_DIR" -xf -
 fi
 
-chown -R root:root "$APP_DIR"
+chown -R "$RUN_USER":"$RUN_USER" "$APP_DIR"
 chmod -R go-w "$APP_DIR"
 
 say "installing dependencies"

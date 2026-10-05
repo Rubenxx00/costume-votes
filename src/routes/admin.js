@@ -158,7 +158,10 @@ router.get('/guests/search', (req, res) => {
 router.get('/guests', (req, res) => res.json({ guests: allGuests() }));
 
 router.post('/guests/:id/delete', (req, res) => {
-  db.prepare('DELETE FROM guests WHERE id = ?').run(req.params.id);
+  const gid = Number(req.params.id);
+  const guest = db.prepare('SELECT costume_id FROM guests WHERE id = ?').get(gid);
+  db.prepare('DELETE FROM guests WHERE id = ?').run(gid);
+  if (guest?.costume_id) deleteCostumeIfEmpty(guest.costume_id);
   res.json({ ok: true, guests: allGuests() });
 });
 
@@ -263,6 +266,8 @@ router.post('/costumes/:id/update', async (req, res) => {
         WHERE id = ? AND costume_id = ?`
     );
     for (const gid of detach) stmt.run(Number(gid), id);
+    // If the costume now has zero members, delete it.
+    await deleteCostumeIfEmpty(id);
   }
 
   // `null` clears the photo, a data URL replaces it, absent leaves it alone.
@@ -375,6 +380,23 @@ router.post('/votes/reset', (req, res) => {
 function removePhoto(url) {
   if (!url || !url.startsWith('/uploads/')) return;
   fs.rmSync(path.join(UPLOAD_DIR, path.basename(url)), { force: true });
+}
+
+/**
+ * If a costume has no members, drop it (costumes must be correlated with at
+ * least one guest). Clears its photo pair and any votes pointing at it.
+ */
+function deleteCostumeIfEmpty(costumeId) {
+  const members = db.prepare('SELECT COUNT(*) AS n FROM guests WHERE costume_id = ?').get(costumeId).n;
+  if (members > 0) return; // still valid, nothing to do.
+
+  const costume = db.prepare('SELECT id, photo, photo_hd FROM costumes WHERE id = ?').get(costumeId);
+  if (!costume) return;
+
+  db.prepare('DELETE FROM votes WHERE costume_id = ?').run(costumeId);
+  db.prepare('DELETE FROM costumes WHERE id = ?').run(costumeId);
+  removePhoto(costume.photo);
+  removePhoto(costume.photo_hd);
 }
 
 /**
