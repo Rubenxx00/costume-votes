@@ -3,6 +3,7 @@ const EMOJI = { single: '🧍', couple: '💞', group: '👥' };
 
 let TOKEN = sessionStorage.getItem('cv_token') || '';
 let state = null;
+let expandedCategory = null; // Track which category section is expanded
 
 function alertBox(text, kind = 'err') {
   const el = $('alert');
@@ -70,7 +71,8 @@ function render() {
     <div class="ballot">
       ${categories.map((cat) => {
         const chosen = votes[cat.key];
-        return `<section class="cat" data-cat="${cat.key}">
+        const collapsed = cat.key !== expandedCategory;
+        return `<section class="cat ${collapsed ? 'collapsed' : ''}" data-cat="${cat.key}">
           <h2>${EMOJI[cat.key === 'beautiful' ? 'single' : cat.key === 'scary' ? 'group' : 'couple']}
               ${esc(cat.label)}
             ${chosen ? '<span class="badge ok">voted</span>' : '<span class="badge">not voted</span>'}
@@ -91,6 +93,12 @@ function render() {
     </div>`;
 
   $('doneCard').classList.toggle('hidden', state.remaining > 0);
+
+  // If a category is expanded, ensure its section is not collapsed
+  if (expandedCategory) {
+    const expandedEl = document.querySelector('.cat[data-cat="' + expandedCategory + '"]');
+    if (expandedEl) expandedEl.classList.remove('collapsed');
+  }
 }
 
 function thumbCard(c, isOwn) {
@@ -174,6 +182,8 @@ async function vote(category, costumeId, undo = false) {
     state.votes = out.ballot.votes;
     state.remaining = out.remaining;
     state.myCostume = state.costumes.find((c) => c.id === state.guest.costume_id) || null;
+    // The cast vote — its section folds back shut.
+    expandedCategory = null;
     render();
   } catch (e) {
     alertBox(e.message);
@@ -182,6 +192,15 @@ async function vote(category, costumeId, undo = false) {
 }
 
 document.addEventListener('click', (e) => {
+  // Tap the category header to enlarge that category's section.
+  const head = e.target.closest('.cat h2');
+  if (head) {
+    e.preventDefault();
+    const section = head.closest('.cat');
+    expandedCategory = section.dataset.cat;
+    render();
+    return;
+  }
   // A tap on the photo itself enlarges it rather than voting, so the zoom
   // affordance can't cause a mis-vote on a crowded dance floor.
   const zoom = e.target.closest('.thumb.zoomable');

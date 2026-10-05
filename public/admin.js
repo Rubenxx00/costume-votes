@@ -111,7 +111,6 @@ function paintStats() {
     ['Guests', st.guests],
     ['Onboarded', `${st.onboarded}/${st.guests}`],
     ['Costumes', st.costumes],
-    ['Tokens', st.tokens],
     ['Voters', st.voted],
   ].map(([k, v]) => `<div class="stat"><b>${esc(v)}</b><span>${k}</span></div>`).join('');
 }
