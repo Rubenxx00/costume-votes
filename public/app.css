@@ -207,8 +207,13 @@ body.lightbox-open { overflow: hidden; }
 .pickline { margin-top: 10px; color: var(--muted); font-size: 13px; }
 .pickline b { color: var(--text); }
 .pickline .final { color: var(--green); font-weight: 700; }
-.badge.pick { color: var(--accent-2); border-color: color-mix(in srgb, var(--accent-2) 50%, transparent); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-top: 12px; }
+.cat:not(.collapsed) .peek { display: none; }
+.peek { display: flex; gap: 8px; padding-top: 10px; flex-wrap: wrap; }
+.peek .peek-item { display: flex; align-items: center; gap: 5px; padding: 4px 8px; background: #ffffff08; border-radius: 14px; font-size: 11px; color: var(--muted); border: 1px solid var(--line); }
+.peek .peek-thumb { width: 24px; height: 24px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+.peek .peek-emoji { width: 24px; height: 24px; border-radius: 8px; background: var(--bg-2); display: grid; place-items: center; font-size: 12px; flex-shrink: 0; }
+.peek .peek-name { max-width: 120px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .pick {
   position: relative; text-align: left; padding: 0; overflow: hidden;
   border: 2px solid var(--line); border-radius: 14px; background: var(--card-2);
@@ -227,6 +232,12 @@ body.lightbox-open { overflow: hidden; }
   border-radius: 6px; display: grid; place-items: center;
   font-size: 13px; line-height: 1; pointer-events: none;
 }
+.select-badge {
+  position: absolute; bottom: 8px; right: 8px;
+  background: #ffffff22; color: var(--text); border: 1px solid var(--line);
+  border-radius: 6px; padding: 2px 7px; font-size: 10px; font-weight: 700;
+  letter-spacing: .3px; pointer-events: none; opacity: .92;
+}
 .pick[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px #ff7a1a33; }
 .pick[aria-pressed="true"]::after {
   content: "✓"; position: absolute; top: 8px; right: 8px;
@@ -238,6 +249,11 @@ body.lightbox-open { overflow: hidden; }
 .pick.locked[aria-pressed="true"] { border-color: var(--green); box-shadow: 0 0 0 3px #35c07f33; }
 .pick.locked[aria-pressed="true"]::after { background: var(--green); color: #07231a; }
 .pick:disabled { opacity: .8; }
+
+.selected-display { display: flex; gap: 10px; align-items: center; padding: 8px; background: #ffffff08; border-radius: 10px; margin-top: 6px; border: 1px solid var(--line); }
+.selected-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--line); }
+.selected-name { font-weight: 600; font-size: 13px; }
+.selected-display .final { font-size: 10px; color: var(--green); font-weight: 700; }
 
 /* Fixed submit bar — follows the guest so they can always hit "Vote". */
 .castbar {

@@ -143,7 +143,7 @@ export function ballotFor(guestId) {
     guest: { id: guest.id, name: guest.name, costume_id: guest.costume_id },
     costumes,
     // A costume is votable only if the guest is a member of it.
-    votable: costumes.filter((c) => !c.isOwn && guest.costume_id != null),
+    votable: costumes.filter((c) => !c.isOwn || guest.costume_id == null),
     votes: { beautiful: cast('beautiful'), scary: cast('scary'), original: cast('original') },
   };
 }

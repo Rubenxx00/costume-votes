@@ -55,17 +55,11 @@ function hideCastBar() {
 function render() {
   const { guest, categories, costumes, votes, voting } = state;
 
+  const unboarded = guest.costume_id == null;
   $('who').innerHTML = `Voting as <b>${esc(guest.name)}</b>` +
-    (state.myCostume ? ` · costume: <b>${esc(state.myCostume.name)}</b>` : '');
-
-  // Guests must be registered before they can be given a ballot.
-  if (guest.costume_id == null) {
-    hideCastBar();
-    $('body').innerHTML = `<div class="card">
-      <h2>You're not registered yet</h2>
-      <p class="sub">Find the host — they need to take your photo and add you to your costume before you can vote.</p></div>`;
-    return;
-  }
+    (unboarded
+      ? ` · <b>pure voter</b>`
+      : ` · costume: <b>${esc(state.myCostume.name)}</b>`);
 
   if (!voting.open) {
     hideCastBar();
@@ -86,39 +80,48 @@ function render() {
   // meant to be tapped, so no stray request can pull the big file.
   const votable = costumes.filter((c) => !c.isOwn);
   const byId = new Map(costumes.map((c) => [c.id, c]));
-  const editable = categories.filter((cat) => !votes[cat.key]);
+  const editable = categories.filter((cat) => !votes[cat.key] && !pending[cat.key]);
 
   // Default view: open the first category that still needs a vote, so the
   // guest lands on something to do rather than three shut headers.
   if (!expandedCategory && editable.length) expandedCategory = editable[0].key;
 
-  const pendingCount = editable.filter((cat) => pending[cat.key]).length;
+  const introLine = state.remaining === 0
+    ? 'All <b>3</b> votes are in. Nice one 🎉 — you can still flick through the costumes.'
+    : `Pick a costume in each category — tap one to select it, tap again to deselect. When you're ready, hit <b>Submit</b>. Your votes are final.`;
 
-  $('body').innerHTML = `
-    <p class="sub intro">
-      ${state.remaining === 0
-        ? 'All <b>3</b> votes are in. Nice one 🎉 — you can still flick through the costumes.'
-        : `Pick a costume in each category — tap one to select it, tap again to deselect. When you're ready, hit <b>Submit</b>. Your votes are final.`}
-    </p>
-    <div class="ballot">
-      ${categories.map((cat) => section(cat, votes, votable, byId)).join('')}
-    </div>
-    <div class="card" style="margin-top:16px">
+  const ownCard = unboarded
+    ? `<div class="card" style="margin-top:16px">
+      <h3>Just a voter</h3>
+      <p class="sub">You're not in a costume this year — that's fine. You still get three votes.</p>
+      </div>`
+    : `<div class="card" style="margin-top:16px">
       <h3>Your own costume</h3>
       ${thumbCard(state.myCostume, true)}
       <p class="sub" style="margin-top:10px">You can't vote for this one — that's the one rule.</p>
     </div>`;
 
+  $('body').innerHTML = `
+    <p class="sub intro">${introLine}</p>
+    <div class="ballot">
+      ${categories.map((cat) => section(cat, votes, votable, byId)).join('')}
+    </div>
+    ${ownCard}
+  `;
+
   $('doneCard').classList.toggle('hidden', state.remaining > 0);
 
   // Submit bar: spells out exactly how many picks are queued.
+  const allPicked = state.categories.every((cat) => state.votes[cat.key] || pending[cat.key] != null);
+
   showCastBar();
-  $('castBtn').disabled = pendingCount === 0 || submitting;
-  if (pendingCount) {
-    $('castHint').textContent = `${pendingCount} pick${pendingCount > 1 ? 's' : ''} ready — not submitted yet`;
-    $('castBtn').textContent = `Submit ${pendingCount} vote${pendingCount > 1 ? 's' : ''}`;
+  $('castBtn').disabled = !allPicked || submitting;
+  if (allPicked) {
+    $('castHint').textContent = 'All 3 picks ready — not submitted yet';
+    $('castBtn').textContent = 'Submit 3 votes';
   } else {
-    $('castHint').textContent = state.remaining ? 'Tap a costume to add your first pick.' : 'All votes are in.';
+    const picked = state.categories.filter((cat) => state.votes[cat.key] || pending[cat.key] != null).length;
+    $('castHint').textContent = `Pick a costume in all 3 categories (${picked}/3)`;
     $('castBtn').textContent = 'Submit';
   }
 }
@@ -133,8 +136,23 @@ function section(cat, votes, votable, byId) {
   const badge = locked
     ? '<span class="badge ok">voted</span>'
     : picked
-      ? '<span class="badge pick">pick set</span>'
-      : '<span class="badge">not voted</span>';
+      ? '<span class="badge kind">selected</span>'
+      : '<span class="badge">not selected</span>';
+
+  // When collapsed, show just the selected costume thumbnail + name
+  const selectedDisplay = collapsed
+    ? (picked
+        ? `<div class="selected-display">
+             <img class="selected-thumb" src="${esc(byId.get(picked)?.photo || '')}" alt="${esc(byId.get(picked)?.name || '—')}" loading="lazy">
+             <span class="selected-name">${esc(byId.get(picked)?.name || '—')}</span>
+           </div>`
+        : locked
+          ? `<div class="selected-display">
+             <img class="selected-thumb" src="${esc(voted?.costume_id && byId.get(voted.costume_id)?.photo || '')}" alt="${esc(voted?.costume_id && byId.get(voted.costume_id)?.name || '—')}" loading="lazy">
+             <span class="selected-name">${esc(voted?.costume_id && byId.get(voted.costume_id)?.name || '—')}</span>
+           </div>`
+          : '')
+    : '';
 
   return `<section class="cat ${collapsed ? 'collapsed' : ''}" data-cat="${cat.key}">
     <h2>
@@ -145,6 +163,7 @@ function section(cat, votes, votable, byId) {
     <div class="grid">
       ${votable.map((c) => pickCard(c, c.id === selectedId, locked)).join('')}
     </div>
+    ${selectedDisplay}
     ${locked
       ? `<p class="pickline">Your pick: <b>${esc(byId.get(voted.costume_id)?.name || '—')}</b> <span class="final">(final)</span></p>`
       : picked
@@ -163,6 +182,7 @@ function pickCard(c, isChosen, locked) {
       <span class="nm">${esc(c.name)}</span>
       <span class="mem">${esc(c.members.join(', '))}</span>
     </span>
+    ${!locked ? '<span class="select-badge">Tap</span>' : ''}
   </button>`;
 }
 
@@ -228,6 +248,7 @@ function toggleCategory(key) {
   expandedCategory = expandedCategory === key ? null : key;
   render();
 }
+window.toggleCategory = toggleCategory;
 
 /** Commit every staged pick at once. Votes are final the moment this lands. */
 async function submitVote() {
@@ -259,6 +280,7 @@ async function submitVote() {
     state = await api(`/api/me?token=${encodeURIComponent(TOKEN)}`);
     state.myCostume = state.costumes.find((c) => c.id === state.guest.costume_id) || null;
     pending = {};
+    expandedCategory = null; // all votes in — fold every section shut
     submitting = false;
     renderClose();
     render();
@@ -270,13 +292,6 @@ async function submitVote() {
 }
 
 document.addEventListener('click', (e) => {
-  // Tap the category header (or its arrow) to open/close that section.
-  const head = e.target.closest('.cat h2');
-  if (head) {
-    const section = head.closest('.cat');
-    toggleCategory(section.dataset.cat);
-    return;
-  }
   // A tap on the photo itself enlarges it rather than picking it, so the zoom
   // affordance can't cause a mis-pick on a crowded dance floor.
   const zoom = e.target.closest('.thumb.zoomable');
@@ -286,12 +301,37 @@ document.addEventListener('click', (e) => {
     window.costumeLightbox?.open(zoom.dataset.hd, zoom.dataset.caption || zoom.alt);
     return;
   }
+
+  const section = e.target.closest('.cat');
+  if (!section) return;
+  const key = section.dataset.cat;
+
+  // Tap the category header (or its arrow) to open/close that section.
+  if (e.target.closest('.cat h2')) {
+    toggleCategory(key);
+    return;
+  }
+
+  // A collapsed section shows only the selected pill — tap anywhere on it to
+  // re-open the grid so the guest can change their pick.
+  if (section.classList.contains('collapsed')) {
+    toggleCategory(key);
+    return;
+  }
+
   // Tap a costume to stage (or un-stage) a pick — nothing is sent yet.
   const pick = e.target.closest('[data-vote]');
   if (pick) {
-    const category = pick.closest('.cat').dataset.cat;
     const id = Number(pick.dataset.vote);
-    pending[category] = pending[category] === id ? null : id;
+    const hadPick = pending[key];
+    pending[key] = pending[key] === id ? null : id;
+    // Just staged a new pick: fold this section shut to reveal the selected
+    // pill, and move on to the next category that still needs a vote. A re-pick
+    // from an already-expanded section leaves it open so the guest can compare.
+    if (pending[key] && !hadPick) {
+      const next = state.categories.filter((cat) => !state.votes[cat.key] && !pending[cat.key]);
+      expandedCategory = next.length ? next[0].key : null;
+    }
     render();
   }
 });
