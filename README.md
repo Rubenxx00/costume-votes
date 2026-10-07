@@ -82,8 +82,19 @@ per category. Votes can be changed until the timer runs out.
 
 `deploy/ORACLE.md` covers running this on Oracle Cloud Free Tier (Ampere ARM)
 behind a Cloudflare Tunnel — instance sizing, systemd unit, the named-tunnel
-setup, and the free-tier idle-reclaim gotcha. `deploy/costume-votes.service` and
-`deploy/costume-votes.env.example` are ready to install.
+setup, and the free-tier idle-reclaim gotcha.
+
+Two scripts do the work, so the manual steps don't have to be repeated:
+
+```bash
+sudo ./deploy/install.sh          # system user, code, deps, env, unit, start
+sudo ./deploy/reset.sh --all      # wipe the database and photos again
+```
+
+`reset.sh` also takes `--keep-costumes` (clear guests and votes, keep costumes
+and photos), `--password` (restore the admin password from the env file), and
+`--dry-run`. It backs `DATA_DIR` up first and never asks you to reason about the
+WAL sidecars.
 
 The tunnel is the only supported production path: no inbound ports are opened in
 the Oracle security list, and `cloudflared` terminates TLS and renews the

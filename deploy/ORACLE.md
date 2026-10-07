@@ -143,6 +143,38 @@ use `curl http://localhost:3000` rather than opening a port.
 
 ---
 
+## 5. Resetting data
+
+`deploy/reset.sh` wipes data for you. There is nothing to re-initialise
+afterwards: the schema is created with `CREATE TABLE IF NOT EXISTS` on every
+boot, and the admin password is re-seeded from `ADMIN_PASSWORD` whenever its
+settings row is missing.
+
+```bash
+sudo ./deploy/reset.sh --all              # wipe database + photos (default)
+sudo ./deploy/reset.sh --keep-costumes    # clear guests, votes and the voting
+                                          # gate; keep costumes, photos, password
+sudo ./deploy/reset.sh --password         # restore the admin password from the env file
+sudo ./deploy/reset.sh --all --dry-run    # print what would happen, touch nothing
+```
+
+It stops the service, tars `DATA_DIR` to
+`/root/costume-votes-data-<timestamp>.tgz`, acts, then starts the service and
+health-checks it. `--no-backup` skips the backup; `--yes` skips the confirmation
+prompt (and is required when there is no terminal to confirm on).
+
+`--all` returns the admin password to `ADMIN_PASSWORD` from
+`/etc/costume-votes.env`, which is also the lock-out recovery path.
+
+**Back up the directory, never `party.db` on its own.** The database runs in WAL
+mode, so recent writes can live entirely in `party.db-wal` — on a working
+deployment `party.db` can sit at a few KB while the WAL holds megabytes. Copying
+just the `.db` gets you an empty database, which is why the backup step is a
+`tar` of the whole directory and why it runs *after* the stop (a `.db` and a
+`-wal` captured at different instants can be a torn pair).
+
+---
+
 ## Night-of checklist
 
 ```bash
@@ -193,8 +225,8 @@ rate-limit rule.
 `/etc/costume-votes.env` is honoured on **first boot only** — `ensureAdminPassword()`
 skips it once a password exists in the database, so editing the file later does
 nothing. Change it at **Admin → Settings → Admin password**. If you've lost it,
-there is no recovery: reset the `admin_password` row in
-`/opt/costume-votes/data/party.db` and restart.
+run `sudo ./deploy/reset.sh --password`, which clears the stored hash so the
+`ADMIN_PASSWORD` in the env file takes effect again.
 
 Changing the password alone leaves already-issued session cookies valid, because
 the cookie signing key is independent of it. Tick **“Sign out other devices”**
