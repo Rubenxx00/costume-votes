@@ -16,7 +16,13 @@
     </div>
   </header>
 
-  <div class="card">
+  <div class="card magic">
+    <h3>📲 Niente token da digitare</h3>
+    <p class="sub">Apri il messaggio che ti è arrivato su WhatsApp e tocca il link del tuo invito: entri direttamente nella pagina di voto, il token è già dentro il link.</p>
+  </div>
+
+  <details class="card">
+    <summary>Hai un token cartaceo? Inseriscilo a mano</summary>
     <label for="token">Il tuo token</label>
     <input id="token" class="mono" placeholder="es. K7F2-9QX4" autocapitalize="characters"
            autocorrect="off" spellcheck="false" autocomplete="off" inputmode="text">
@@ -24,8 +30,8 @@
       <button class="primary" id="go" style="flex:1">Inizia a votare</button>
     </div>
     <div id="msg" class="msg"></div>
-    <p class="sub" style="margin-top:14px">Non trovi il tuo token? Controlla i messaggi ricevuti su WhatsApp,like</p>
-  </div>
+    <p class="sub" style="margin-top:14px">Non trovi il tuo token? Controlla i messaggi ricevuti su WhatsApp</p>
+  </details>
 
   <div id="status" class="card hidden"></div>
 </div>

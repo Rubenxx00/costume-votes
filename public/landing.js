@@ -23,7 +23,7 @@ async function poll() {
       tick();
     } else if (s.voting.reason === 'not-opened') {
       box.innerHTML = `<h3>Le votazioni non sono ancora iniziate</h3>
-        <p class="sub">L'host sta ancora registrando tutti — tieni il tuo token a portata di mano.</p>`;
+        <p class="sub">Tieniti pronto :)</p>`;
     } else if (s.voting.reason === 'closed-by-host') {
       box.innerHTML = `<h3>Le votazioni sono chiuse</h3>
         <p class="sub">Grazie per aver votato — i risultati sono sul proiettore, oppure <a href="/results">apri la bacheca</a>.</p>`;
@@ -65,7 +65,7 @@ $('go').addEventListener('click', submit);
 $('token').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') submit();
 });
-$('token').focus();
+// Token input lives inside a collapsed <details> — don't auto-focus a hidden field.
 
 // Returning from /vote? — send them straight back to their ballot.
 // Stored tokens are only as trustworthy as this device, so the ballot itself
