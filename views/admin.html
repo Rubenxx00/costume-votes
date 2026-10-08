@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="it">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Admin console · Costume Party</title>
+<title>Console admin · Costume Party</title>
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
@@ -12,11 +12,11 @@
   <header class="top">
     <div>
       <h1>🎃 <span id="event">Costume Party</span> <span class="badge" id="votingBadge">…</span></h1>
-      <p class="sub">Host console — <a href="/results" target="_blank">results board ↗</a></p>
+      <p class="sub">Console dell'host — <a href="/results" target="_blank">bacheca dei risultati ↗</a></p>
     </div>
     <div class="row tight">
-      <button class="small" id="refresh">Refresh</button>
-      <button class="small" id="logout">Log out</button>
+      <button class="small" id="refresh">Aggiorna</button>
+      <button class="small" id="logout">Esci</button>
     </div>
   </header>
 
@@ -25,21 +25,21 @@
   <div class="card" id="gateCard">
     <div class="row" style="align-items:center;gap:16px">
       <div style="flex:2;min-width:220px">
-        <h2 id="gateTitle" style="margin:0">Voting is closed</h2>
-        <p class="sub" id="gateSub">Finish the roster and photos, then open voting.</p>
+        <h2 id="gateTitle" style="margin:0">Le votazioni sono chiuse</h2>
+        <p class="sub" id="gateSub">Completa l'elenco degli ospiti e le foto, poi apri le votazioni.</p>
       </div>
       <div style="flex:0 0 auto;text-align:right">
-        <button class="primary" id="toggleVoting">Open voting</button>
+        <button class="primary" id="toggleVoting">Apri le votazioni</button>
       </div>
     </div>
   </div>
 
   <nav class="tabs" id="tabs" style="margin-top:22px">
-    <button data-tab="roster" aria-selected="true">1 · Guest roster</button>
-    <button data-tab="onboard" aria-selected="false">2 · Onboard costumes</button>
-    <button data-tab="tokens" aria-selected="false">3 · Tokens</button>
-    <button data-tab="results" aria-selected="false">4 · Results</button>
-    <button data-tab="settings" aria-selected="false">Settings</button>
+    <button data-tab="roster" aria-selected="true">1 · Elenco ospiti</button>
+    <button data-tab="onboard" aria-selected="false">2 · Registra costumi</button>
+    <button data-tab="tokens" aria-selected="false">3 · Token</button>
+    <button data-tab="results" aria-selected="false">4 · Risultati</button>
+    <button data-tab="settings" aria-selected="false">Impostazioni</button>
   </nav>
 
   <div id="msg" class="msg"></div>
@@ -47,29 +47,29 @@
   <!-- ------------------------------------------------------- roster tab -->
   <section data-panel="roster">
     <div class="card">
-      <h2>Load the guest list</h2>
-      <p class="sub">Paste one name per line, or upload a CSV. Extra columns are ignored.</p>
-      <label for="csv">Names (CSV or plain lines)</label>
+      <h2>Carica l'elenco degli ospiti</h2>
+      <p class="sub">Incolla un nome per riga, oppure carica un CSV. Le colonne extra vengono ignorate.</p>
+      <label for="csv">Nomi (CSV o righe di testo)</label>
       <textarea id="csv" rows="7" placeholder="Alice Rossi&#10;Bob &amp; Carla Neri&#10;Dan Klein"></textarea>
       <div class="row" style="margin-top:10px">
         <input type="file" id="file" accept=".csv,.txt,text/csv,text/plain" class="hidden-input">
-        <button id="pickFile">Choose CSV file…</button>
-        <button id="clearCsv" class="small">Clear</button>
-        <button class="primary" id="import" style="flex:0 0 auto">Add guests</button>
+        <button id="pickFile">Scegli file CSV…</button>
+        <button id="clearCsv" class="small">Svuota</button>
+        <button class="primary" id="import" style="flex:0 0 auto">Aggiungi ospiti</button>
       </div>
       <div id="importReport"></div>
     </div>
 
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center">
-        <h2 style="margin:0">Guests</h2>
+        <h2 style="margin:0">Ospiti</h2>
         <div class="autocomplete" style="width:240px">
-          <input id="guestFilter" placeholder="Filter names…">
+          <input id="guestFilter" placeholder="Filtra nomi…">
         </div>
       </div>
       <div class="scroll" style="margin-top:12px">
         <table>
-          <thead><tr><th>Guest</th><th>Costume</th><th>Photo</th><th>Token</th><th></th></tr></thead>
+          <thead><tr><th>Ospite</th><th>Costume</th><th>Foto</th><th>Token</th><th></th></tr></thead>
           <tbody id="guestRows"></tbody>
         </table>
       </div>
@@ -79,42 +79,43 @@
   <!-- ------------------------------------------------------ onboard tab -->
   <section data-panel="onboard" class="hidden">
     <div class="card">
-      <h2>Onboard a costume</h2>
-      <p class="sub">Pick the guest(s), snap a photo, save. Do this as guests arrive.
-        The type is worked out from the headcount — 1 guest is a solo, 2 a couple, 3+ a group.</p>
+      <h2>Registra un costume</h2>
+      <p class="sub">Scegli l'ospite (o gli ospiti), scatta una foto e salva. Fallo man mano che gli
+        ospiti arrivano. Il tipo viene dedotto dal numero di persone: 1 ospite è un singolo,
+        2 una coppia, 3+ un gruppo.</p>
 
-      <label for="ac">Who is in it? <span id="acHint" class="sub" style="display:inline"></span></label>
+      <label for="ac">Chi ne fa parte? <span id="acHint" class="sub" style="display:inline"></span></label>
       <div class="autocomplete">
-        <input id="ac" placeholder="Start typing a name…" autocomplete="off" spellcheck="false">
+        <input id="ac" placeholder="Inizia a digitare un nome…" autocomplete="off" spellcheck="false">
         <div class="ac-list" id="acList"></div>
       </div>
       <div id="chips" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
 
-      <label for="cname">Costume name <span class="sub" style="display:inline">(optional)</span></label>
-      <input id="cname" placeholder="Leave blank to use the guest name(s)">
+      <label for="cname">Nome del costume <span class="sub" style="display:inline">(facoltativo)</span></label>
+      <input id="cname" placeholder="Lascia vuoto per usare i nomi degli ospiti">
 
-      <label>Photo</label>
-      <div class="drop" id="drop">Tap to take / choose a photo</div>
+      <label>Foto</label>
+      <div class="drop" id="drop">Tocca per scattare / scegliere una foto</div>
       <input type="file" id="photoInput" accept="image/*" capture="environment" class="hidden">
       <div class="preview hidden" id="preview">
-        <img id="previewImg" alt="preview">
+        <img id="previewImg" alt="anteprima">
         <div>
-          <button class="small" id="retake">Retake</button>
+          <button class="small" id="retake">Rifai</button>
           <div class="preview-note" id="previewNote"></div>
         </div>
       </div>
 
       <div class="row" style="margin-top:16px">
-        <button class="primary" id="saveCostume">Save costume</button>
-        <button id="clearForm">Clear form</button>
+        <button class="primary" id="saveCostume">Salva costume</button>
+        <button id="clearForm">Azzera il modulo</button>
       </div>
     </div>
 
     <div class="card">
-      <h2>Onboarded costumes <span class="badge" id="cCount">0</span></h2>
+      <h2>Costumi registrati <span class="badge" id="cCount">0</span></h2>
       <div class="scroll" style="margin-top:10px">
         <table>
-          <thead><tr><th></th><th>Costume</th><th>Type</th><th>Members</th><th>Votes</th><th></th></tr></thead>
+          <thead><tr><th></th><th>Costume</th><th>Tipo</th><th>Membri</th><th>Voti</th><th></th></tr></thead>
           <tbody id="costumeRows"></tbody>
         </table>
       </div>
@@ -124,40 +125,40 @@
   <!-- ------------------------------------------------------- tokens tab -->
   <section data-panel="tokens" class="hidden">
     <div class="card">
-      <h2>Generate tokens</h2>
-      <p class="sub">One token per guest. Print the CSV, cut it up, hand one card per guest.
-         A token lets that guest cast exactly one vote per category.</p>
+      <h2>Genera token</h2>
+      <p class="sub">Un token per ospite. Stampa il CSV, ritaglialo e consegna una card a ogni ospite.
+         Un token consente a quell'ospite di esprimere esattamente un voto per categoria.</p>
       <div class="row">
-        <button class="primary" id="genTokens">Generate tokens for everyone</button>
-        <a class="btn" href="/api/admin/tokens.csv" download>Download tokens CSV</a>
+        <button class="primary" id="genTokens">Genera token per tutti</button>
+        <a class="btn" href="/api/admin/tokens.csv" download>Scarica CSV dei token</a>
       </div>
       <div id="tokenReport"></div>
     </div>
     <div class="card">
-      <h2>Tokens at a glance</h2>
+      <h2>Token in sintesi</h2>
       <div class="scroll" style="margin-top:10px">
         <table>
-          <thead><tr><th>Token</th><th>Guest</th><th>Costume</th><th>Votes</th><th></th></tr></thead>
+          <thead><tr><th>Token</th><th>Ospite</th><th>Costume</th><th>Voti</th><th></th></tr></thead>
           <tbody id="tokenRows"></tbody>
         </table>
       </div>
-      <p class="sub" style="margin-top:10px">“Votes” is a live count per guest — handy for calling people in
-         if someone claims their token didn't work.</p>
+      <p class="sub" style="margin-top:10px">«Voti» è un conteggio in tempo reale per ospite — utile per
+         richiamare le persone se qualcuno dice che il suo token non ha funzionato.</p>
     </div>
   </section>
 
   <!-- ------------------------------------------------------ results tab -->
   <section data-panel="results" class="hidden">
     <div class="card">
-      <h2>Live results</h2>
+      <h2>Risultati in tempo reale</h2>
       <p class="sub" id="turnout"></p>
       <div id="adminResults"></div>
     </div>
     <div class="card">
-      <h2>Danger zone</h2>
+      <h2>Zona pericolosa</h2>
       <div class="row">
-        <button class="danger" id="resetVotes">Delete all votes</button>
-        <a class="btn" href="/results" target="_blank">Open public board ↗</a>
+        <button class="danger" id="resetVotes">Elimina tutti i voti</button>
+        <a class="btn" href="/results" target="_blank">Apri la bacheca pubblica ↗</a>
       </div>
     </div>
   </section>
@@ -165,44 +166,45 @@
   <!-- ----------------------------------------------------- settings tab -->
   <section data-panel="settings" class="hidden">
     <div class="card">
-      <h2>Voting window</h2>
-      <p class="sub">Voting stays closed until you press “Open voting”. A deadline is optional —
-         set one and voting closes by itself at that time.</p>
-      <label for="closesAt">Voting closes at <span class="sub" style="display:inline">(optional)</span></label>
+      <h2>Finestra di votazione</h2>
+      <p class="sub">Le votazioni restano chiuse finché non premi «Apri le votazioni». Una scadenza è
+         facoltativa: impostala e le votazioni si chiuderanno da sole a quell'ora.</p>
+      <label for="closesAt">Le votazioni chiudono alle <span class="sub" style="display:inline">(facoltativo)</span></label>
       <input type="datetime-local" id="closesAt">
       <div class="row" style="margin-top:10px">
-        <button class="primary" id="saveClose">Save &amp; open</button>
-        <button id="closeIn1h">Close in 1 hour</button>
-        <button id="closeIn30m">Close in 30 min</button>
+        <button class="primary" id="saveClose">Salva e apri</button>
+        <button id="closeIn1h">Chiudi tra 1 ora</button>
+        <button id="closeIn30m">Chiudi tra 30 min</button>
       </div>
-      <p class="sub" style="margin-top:10px">The countdown and the ballot both enforce this server-side,
-         so a guest can't keep voting from a stale screen.</p>
+      <p class="sub" style="margin-top:10px">Il conto alla rovescia e il modulo di voto applicano
+         entrambi questa regola lato server, così un ospite non può continuare a votare da una
+         schermata non aggiornata.</p>
     </div>
     <div class="card">
-      <h2>Event</h2>
-      <label for="eventName">Event name (shown to guests)</label>
+      <h2>Evento</h2>
+      <label for="eventName">Nome dell'evento (mostrato agli ospiti)</label>
       <input id="eventName" placeholder="Costume Party">
-      <button class="primary" id="saveEvent" style="margin-top:12px">Save</button>
+      <button class="primary" id="saveEvent" style="margin-top:12px">Salva</button>
     </div>
     <div class="card">
-      <h2>Admin password</h2>
-      <p class="sub">The first-run password is only ever used once. Change it here — the
-         environment variable in <code>/etc/costume-votes.env</code> is read on first boot
-         exclusively and editing it later does nothing.</p>
-      <label for="pwCurrent">Current password</label>
+      <h2>Password admin</h2>
+      <p class="sub">La password di primo avvio viene usata una sola volta. Cambiala qui — la
+         variabile d'ambiente in <code>/etc/costume-votes.env</code> viene letta esclusivamente
+         al primo avvio e modificarla in seguito non ha alcun effetto.</p>
+      <label for="pwCurrent">Password attuale</label>
       <input type="password" id="pwCurrent" autocomplete="current-password">
-      <label for="pwNext" style="margin-top:10px">New password <span class="sub" style="display:inline">(at least 8 characters)</span></label>
+      <label for="pwNext" style="margin-top:10px">Nuova password <span class="sub" style="display:inline">(almeno 8 caratteri)</span></label>
       <input type="password" id="pwNext" autocomplete="new-password">
-      <label for="pwConfirm" style="margin-top:10px">Repeat new password</label>
+      <label for="pwConfirm" style="margin-top:10px">Ripeti la nuova password</label>
       <input type="password" id="pwConfirm" autocomplete="new-password">
       <label class="check" style="margin-top:12px;display:block">
         <input type="checkbox" id="pwLogoutOthers" checked>
-        Sign out other devices
+        Disconnetti gli altri dispositivi
       </label>
-      <p class="sub" style="margin-top:6px">Leave this ticked if you are changing the password
-         because someone may have seen the old one — it invalidates every existing login,
-         not just the password.</p>
-      <button class="primary" id="savePassword" style="margin-top:12px">Change password</button>
+      <p class="sub" style="margin-top:6px">Lascia la spunta se stai cambiando la password
+         perché qualcuno potrebbe aver visto quella vecchia: invalida tutti gli accessi
+         esistenti, non solo la password.</p>
+      <button class="primary" id="savePassword" style="margin-top:12px">Cambia password</button>
     </div>
   </section>
 

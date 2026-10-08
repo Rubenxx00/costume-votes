@@ -34,7 +34,7 @@ async function api(path, opts = {}) {
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw Object.assign(new Error(data.error || 'Something went wrong'), { data, res });
+  if (!res.ok) throw Object.assign(new Error(data.error || 'Qualcosa è andato storto'), { data, res });
   return data;
 }
 
@@ -56,20 +56,20 @@ function render() {
   const { guest, categories, costumes, votes, voting } = state;
 
   const unboarded = guest.costume_id == null;
-  $('who').innerHTML = `Voting as <b>${esc(guest.name)}</b>` +
+  $('who').innerHTML = `Stai votando come <b>${esc(guest.name)}</b>` +
     (unboarded
-      ? ` · <b>pure voter</b>`
+      ? ` · <b>solo votante</b>`
       : ` · costume: <b>${esc(state.myCostume.name)}</b>`);
 
   if (!voting.open) {
     hideCastBar();
     const notStarted = voting.reason === 'not-opened';
-    const heading = notStarted ? 'Voting hasn\'t started yet' : 'Voting is closed';
+    const heading = notStarted ? 'Le votazioni non sono ancora iniziate' : 'Le votazioni sono chiuse';
     const body = notStarted
-      ? 'The host is still registering costumes. This page will work as soon as they open voting — just reload.'
+      ? 'L\'host sta ancora registrando i costumi. Questa pagina funzionerà appena apriranno le votazioni — basta ricaricare.'
       : voting.reason === 'deadline-passed'
-        ? 'The deadline has passed. <a href="/results">See the results</a>.'
-        : 'The host has closed voting. <a href="/results">See the results</a>.';
+        ? 'La scadenza è passata. <a href="/results">Vedi i risultati</a>.'
+        : 'L\'host ha chiuso le votazioni. <a href="/results">Vedi i risultati</a>.';
     $('body').innerHTML = `<div class="card"><h2>${heading}</h2>
       <p class="sub">${body}</p></div>`;
     $('doneCard').classList.add('hidden');
@@ -87,18 +87,18 @@ function render() {
   if (!expandedCategory && editable.length) expandedCategory = editable[0].key;
 
   const introLine = state.remaining === 0
-    ? 'All <b>3</b> votes are in. Nice one 🎉 — you can still flick through the costumes.'
-    : `Pick a costume in each category — tap one to select it, tap again to deselect. When you're ready, hit <b>Submit</b>. Your votes are final.`;
+    ? 'Hai espresso tutti i <b>3</b> voti. Ottimo 🎉 — puoi comunque sfogliare i costumi.'
+    : `Scegli un costume in ogni categoria — tocca per selezionarlo, tocca di nuovo per deselezionarlo. Quando sei pronto, premi <b>Invia</b>. I tuoi voti sono definitivi.`;
 
   const ownCard = unboarded
     ? `<div class="card" style="margin-top:16px">
-      <h3>Just a voter</h3>
-      <p class="sub">You're not in a costume this year — that's fine. You still get three votes.</p>
+      <h3>Solo votante</h3>
+      <p class="sub">Quest'anno non sei in un costume — nessun problema. Hai comunque tre voti.</p>
       </div>`
     : `<div class="card" style="margin-top:16px">
-      <h3>Your own costume</h3>
+      <h3>Il tuo costume</h3>
       ${thumbCard(state.myCostume, true)}
-      <p class="sub" style="margin-top:10px">You can't vote for this one — that's the one rule.</p>
+      <p class="sub" style="margin-top:10px">Non puoi votare per questo — è l'unica regola.</p>
     </div>`;
 
   $('body').innerHTML = `
@@ -117,12 +117,12 @@ function render() {
   showCastBar();
   $('castBtn').disabled = !allPicked || submitting;
   if (allPicked) {
-    $('castHint').textContent = 'All 3 picks ready — not submitted yet';
-    $('castBtn').textContent = 'Submit 3 votes';
+    $('castHint').textContent = 'Tutte e 3 le scelte pronte — non ancora inviate';
+    $('castBtn').textContent = 'Invia 3 voti';
   } else {
     const picked = state.categories.filter((cat) => state.votes[cat.key] || pending[cat.key] != null).length;
-    $('castHint').textContent = `Pick a costume in all 3 categories (${picked}/3)`;
-    $('castBtn').textContent = 'Submit';
+    $('castHint').textContent = `Scegli un costume in tutte e 3 le categorie (${picked}/3)`;
+    $('castBtn').textContent = 'Invia';
   }
 }
 
@@ -134,10 +134,10 @@ function section(cat, votes, votable, byId) {
   const collapsed = cat.key !== expandedCategory;
 
   const badge = locked
-    ? '<span class="badge ok">voted</span>'
+    ? '<span class="badge ok">votato</span>'
     : picked
-      ? '<span class="badge kind">selected</span>'
-      : '<span class="badge">not selected</span>';
+      ? '<span class="badge kind">selezionato</span>'
+      : '<span class="badge">non selezionato</span>';
 
   // When collapsed, show just the selected costume thumbnail + name
   const selectedDisplay = collapsed
@@ -165,9 +165,9 @@ function section(cat, votes, votable, byId) {
     </div>
     ${selectedDisplay}
     ${locked
-      ? `<p class="pickline">Your pick: <b>${esc(byId.get(voted.costume_id)?.name || '—')}</b> <span class="final">(final)</span></p>`
+      ? `<p class="pickline">La tua scelta: <b>${esc(byId.get(voted.costume_id)?.name || '—')}</b> <span class="final">(definitiva)</span></p>`
       : picked
-        ? `<p class="pickline">Selected: <b>${esc(byId.get(picked)?.name || '—')}</b></p>`
+        ? `<p class="pickline">Selezionato: <b>${esc(byId.get(picked)?.name || '—')}</b></p>`
         : ''}
   </section>`;
 }
@@ -182,7 +182,7 @@ function pickCard(c, isChosen, locked) {
       <span class="nm">${esc(c.name)}</span>
       <span class="mem">${esc(c.members.join(', '))}</span>
     </span>
-    ${!locked ? '<span class="select-badge">Tap</span>' : ''}
+    ${!locked ? '<span class="select-badge">Tocca</span>' : ''}
   </button>`;
 }
 
@@ -197,7 +197,7 @@ function thumbCard(c, isOwn) {
       <div class="nm"><b>${esc(c?.name || '—')}</b></div>
       <div class="mem">${esc(c?.members?.join(', ') || '')}</div>
     </div>
-    ${isOwn ? '<span class="chip self">you</span>' : ''}
+    ${isOwn ? '<span class="chip self">tu</span>' : ''}
   </div>`;
 }
 
@@ -215,14 +215,14 @@ async function load() {
     $('who').textContent = '';
     $('body').innerHTML = '';
     alertBox(e.message);
-    $('alert').innerHTML += ' <a href="/">Try again</a>';
+    $('alert').innerHTML += ' <a href="/">Riprova</a>';
   }
 }
 
 function renderClose() {
   const v = state.voting;
   $('closeLine').innerHTML = v.closesAt && v.open
-    ? `Closes in <span class="countdown" data-close="${v.closesAt}"></span>`
+    ? `Chiudono tra <span class="countdown" data-close="${v.closesAt}"></span>`
     : '';
   tick();
 }

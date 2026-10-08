@@ -13,23 +13,23 @@ async function poll() {
   try {
     const s = await (await fetch('/api/status')).json();
     $('event').textContent = s.event_name || 'Costume Party';
-    document.title = `${s.event_name || 'Costume Party'} · Vote`;
+    document.title = `${s.event_name || 'Costume Party'} · Vota`;
     const box = $('status');
     box.classList.remove('hidden');
     if (s.voting.open) {
       box.innerHTML = s.voting.closesAt
-        ? `<h3>Voting is open</h3><p class="sub">Closes <span class="countdown" data-close="${s.voting.closesAt}"></span></p>`
-        : `<h3>Voting is open</h3><p class="sub">The host will close voting from the admin console.</p>`;
+        ? `<h3>Votazioni aperte</h3><p class="sub">Chiudono tra <span class="countdown" data-close="${s.voting.closesAt}"></span></p>`
+        : `<h3>Votazioni aperte</h3><p class="sub">L'host chiuderà le votazioni dalla console admin.</p>`;
       tick();
     } else if (s.voting.reason === 'not-opened') {
-      box.innerHTML = `<h3>Voting hasn't started yet</h3>
-        <p class="sub">The host is still getting everyone registered — keep your token handy.</p>`;
+      box.innerHTML = `<h3>Le votazioni non sono ancora iniziate</h3>
+        <p class="sub">L'host sta ancora registrando tutti — tieni il tuo token a portata di mano.</p>`;
     } else if (s.voting.reason === 'closed-by-host') {
-      box.innerHTML = `<h3>Voting is closed</h3>
-        <p class="sub">Thanks for voting — the results are on the projector, or <a href="/results">open the board</a>.</p>`;
+      box.innerHTML = `<h3>Le votazioni sono chiuse</h3>
+        <p class="sub">Grazie per aver votato — i risultati sono sul proiettore, oppure <a href="/results">apri la bacheca</a>.</p>`;
     } else {
-      box.innerHTML = `<h3>Voting has closed</h3>
-        <p class="sub">Check the projector for the results — or <a href="/results">open the results board</a>.</p>`;
+      box.innerHTML = `<h3>Le votazioni si sono chiuse</h3>
+        <p class="sub">Guarda il proiettore per i risultati — oppure <a href="/results">apri la bacheca dei risultati</a>.</p>`;
     }
   } catch {
     /* offline at the venue: stay quiet, the host can still hand out tokens */
@@ -54,7 +54,7 @@ function tick() {
 
 function submit() {
   const token = normalize($('token').value);
-  if (token.length < 6) return msg('Type the 8-character code from your card.');
+  if (token.length < 6) return msg('Digita il codice di 8 caratteri della tua card.');
   // Preserve the readable form: K7F2-9QX4
   const pretty = token.length === 8 ? `${token.slice(0, 4)}-${token.slice(4)}` : token;
   sessionStorage.setItem('cv_token', pretty);

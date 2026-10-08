@@ -19,7 +19,7 @@
     overlay.className = 'lightbox';
     overlay.hidden = true;
     overlay.innerHTML = `
-      <button class="lightbox-close" type="button" aria-label="Close">&times;</button>
+      <button class="lightbox-close" type="button" aria-label="Chiudi">&times;</button>
       <figure>
         <img alt="">
         <figcaption></figcaption>

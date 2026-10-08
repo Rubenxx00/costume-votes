@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="it">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,11 +10,11 @@
 <body>
 <div class="wrap narrow">
   <div class="card" style="margin-top:12vh">
-    <h1 style="font-size:24px">🎃 Host login</h1>
-    <p class="sub">Admin only — guests don't need a password.</p>
-    <label for="pw">Admin password</label>
+    <h1 style="font-size:24px">🎃 Accesso host</h1>
+    <p class="sub">Solo admin — gli ospiti non hanno bisogno di una password.</p>
+    <label for="pw">Password admin</label>
     <input id="pw" type="password" autocomplete="current-password" autofocus>
-    <button class="primary" id="go" style="width:100%;margin-top:16px">Sign in</button>
+    <button class="primary" id="go" style="width:100%;margin-top:16px">Accedi</button>
     <div id="msg" class="msg"></div>
   </div>
 </div>
@@ -33,7 +33,7 @@ $('go').addEventListener('click', async () => {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     $('msg').className = 'msg err';
-    $('msg').textContent = data.error || 'Wrong password';
+    $('msg').textContent = data.error || 'Password errata';
     return;
   }
   // Behind a tunnel this page is HTTPS and everything is fine. On a bare
@@ -41,8 +41,8 @@ $('go').addEventListener('click', async () => {
   // admin would land back here in a loop — say so instead.
   if (data.secure_cookie && !data.https) {
     $('msg').className = 'msg info';
-    $('msg').textContent = 'Signed in, but this is a plain-HTTP address and the ' +
-      'session cookie will be dropped. Use your https:// address to reach the console.';
+    $('msg').textContent = 'Accesso effettuato, ma questo è un indirizzo HTTP semplice e il ' +
+      'cookie di sessione verrà scartato. Usa il tuo indirizzo https:// per raggiungere la console.';
   }
   location.href = '/admin';
 });

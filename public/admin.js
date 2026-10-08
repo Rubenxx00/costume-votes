@@ -19,7 +19,7 @@ async function api(path, opts = {}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     if (res.status === 401) { location.href = '/admin/login'; throw new Error('unauthorised'); }
-    throw Object.assign(new Error(data.error || 'Request failed'), { data, res });
+    throw Object.assign(new Error(data.error || 'Richiesta non riuscita'), { data, res });
   }
   return data;
 }
@@ -69,11 +69,11 @@ function paintHeader() {
   if (v.open) {
     badge.className = 'badge ok';
     badge.textContent = v.closesAt
-      ? `voting open · closes ${new Date(v.closesAt).toLocaleTimeString()}`
-      : 'voting open · no deadline';
+      ? `votazioni aperte · chiudono alle ${new Date(v.closesAt).toLocaleTimeString()}`
+      : 'votazioni aperte · nessuna scadenza';
   } else {
     badge.className = 'badge off';
-    badge.textContent = v.reason === 'deadline-passed' ? 'closed · deadline passed' : 'voting closed';
+    badge.textContent = v.reason === 'deadline-passed' ? 'chiuse · scadenza passata' : 'votazioni chiuse';
   }
   document.title = `Admin · ${S.event_name || 'Costume Party'}`;
   paintGate();
@@ -87,31 +87,31 @@ function paintGate() {
   const v = S.voting;
   const btn = $('toggleVoting');
   if (v.open) {
-    btn.textContent = 'Close voting now';
+    btn.textContent = 'Chiudi le votazioni ora';
     btn.className = 'danger';
-    $('gateTitle').textContent = 'Voting is open';
+    $('gateTitle').textContent = 'Le votazioni sono aperte';
     $('gateSub').textContent = v.closesAt
-      ? `Guests can vote until ${new Date(v.closesAt).toLocaleString()}.`
-      : 'Guests can vote. It stays open until you close it.';
+      ? `Gli ospiti possono votare fino alle ${new Date(v.closesAt).toLocaleString()}.`
+      : 'Gli ospiti possono votare. Resta aperto finché non lo chiudi.';
   } else {
-    btn.textContent = 'Open voting';
+    btn.textContent = 'Apri le votazioni';
     btn.className = 'primary';
     $('gateTitle').textContent = v.reason === 'deadline-passed'
-      ? 'Voting is closed'
-      : 'Voting is closed';
+      ? 'Le votazioni sono chiuse'
+      : 'Le votazioni sono chiuse';
     $('gateSub').textContent = v.reason === 'deadline-passed'
-      ? 'The deadline has passed. Re-open to let late guests vote, or show the results.'
-      : `Finish the roster and photos, then open voting. ${S.stats.onboarded} of ${S.stats.guests} guests onboarded so far.`;
+      ? 'La scadenza è passata. Riapri per far votare gli ospiti in ritardo, oppure mostra i risultati.'
+      : `Completa l'elenco e le foto, poi apri le votazioni. ${S.stats.onboarded} of ${S.stats.guests} ospiti registrati finora.`;
   }
 }
 
 function paintStats() {
   const st = S.stats;
   $('stats').innerHTML = [
-    ['Guests', st.guests],
-    ['Onboarded', `${st.onboarded}/${st.guests}`],
-    ['Costumes', st.costumes],
-    ['Voters', st.voted],
+    ['Ospiti', st.guests],
+    ['Registrati', `${st.onboarded}/${st.guests}`],
+    ['Costumi', st.costumes],
+    ['Votanti', st.voted],
   ].map(([k, v]) => `<div class="stat"><b>${esc(v)}</b><span>${k}</span></div>`).join('');
 }
 
@@ -130,18 +130,18 @@ function paintGuests() {
         <td><b>${esc(g.name)}</b></td>
         <td>${c ? `<span class="badge kind">${EMOJI[c.kind]} ${esc(c.name)}</span>` : '<span class="badge">—</span>'}</td>
         <td>${c?.photo ? `<img src="${esc(c.photo)}" alt="" loading="lazy" class="zoomable"
-              data-hd="${esc(c.photo_hd || c.photo)}" data-caption="${esc(c.name)}">` : '<span class="sub">no photo</span>'}</td>
+              data-hd="${esc(c.photo_hd || c.photo)}" data-caption="${esc(c.name)}">` : '<span class="sub">nessuna foto</span>'}</td>
         <td class="mono">${g.token ? esc(g.token) : '<span class="sub">—</span>'}</td>
         <td style="text-align:right;white-space:nowrap">
           ${g.costume_id
-            ? `<button class="small" data-unguest="${g.id}">Detach</button>`
-            : `<button class="small" data-prefill="${g.id}">Onboard</button>`}
+            ? `<button class="small" data-unguest="${g.id}">Stacca</button>`
+            : `<button class="small" data-prefill="${g.id}">Registra</button>`}
           <button class="small danger" data-delguest="${g.id}">✕</button>
         </td>
       </tr>`;
     }).join('');
   $('guestRows').innerHTML = rows ||
-    `<tr><td colspan="5" class="empty">No guests yet — paste names above and hit “Add guests”.</td></tr>`;
+    `<tr><td colspan="5" class="empty">Ancora nessun ospite — incolla i nomi qui sopra e premi «Aggiungi ospiti».</td></tr>`;
 }
 
 $('guestFilter').addEventListener('input', (e) => { filter = e.target.value.trim().toLowerCase(); paintGuests(); });
@@ -153,21 +153,21 @@ $('file').addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
   if (!f) return;
   $('csv').value = await f.text();
-  flash(`Loaded ${f.name} into the box — check it, then “Add guests”.`, 'info');
+  flash(`Caricato ${f.name} nella casella — controllalo, poi «Aggiungi ospiti».`, 'info');
 });
 $('clearCsv').addEventListener('click', () => { $('csv').value = ''; });
 
 $('import').addEventListener('click', async () => {
   const csv = $('csv').value.trim();
-  if (!csv) return flash('Paste some names first.', 'err');
+  if (!csv) return flash('Prima incolla qualche nome.', 'err');
   try {
     const out = await api('/api/admin/guests/import', { method: 'POST', body: { csv } });
     $('csv').value = '';
     await load();
     const skipped = out.skipped.length
-      ? ` · skipped ${out.skipped.length} (${out.skipped.slice(0, 4).map((s) => s.name).join(', ')}${out.skipped.length > 4 ? '…' : ''})`
+      ? ` · saltati ${out.skipped.length} (${out.skipped.slice(0, 4).map((s) => s.name).join(', ')}${out.skipped.length > 4 ? '…' : ''})`
       : '';
-    $('importReport').innerHTML = `<div class="msg ok">Added ${out.added.length}: ${esc(out.added.join(', '))}${skipped}</div>`;
+    $('importReport').innerHTML = `<div class="msg ok">Aggiunti ${out.added.length}: ${esc(out.added.join(', '))}${skipped}</div>`;
   } catch (e) { flash(e.message, 'err'); }
 });
 
@@ -175,19 +175,19 @@ document.addEventListener('click', async (e) => {
   const del = e.target.closest('[data-delguest]');
   if (del) {
     const g = S.guests.find((x) => x.id === Number(del.dataset.delguest));
-    if (!confirm(`Remove ${g?.name} from the guest list? Their votes go too.`)) return;
+    if (!confirm(`Rimuovere ${g?.name} dall'elenco degli ospiti? Anche i suoi voti verranno eliminati.`)) return;
     await api(`/api/admin/guests/${g.id}/delete`, { method: 'POST' });
     await load();
-    return flash(`${g.name} removed.`);
+    return flash(`${g.name} rimosso.`);
   }
   const un = e.target.closest('[data-unguest]');
   if (un) {
     const id = Number(un.dataset.unguest);
     const c = S.costumes.find((x) => x.id === S.guests.find((g) => g.id === id)?.costume_id);
-    if (!confirm(`Detach this guest from “${c?.name}”?`)) return;
+    if (!confirm(`Staccare questo ospite da «${c?.name}»?`)) return;
     await api(`/api/admin/costumes/${c.id}/update`, { method: 'POST', body: { detach: [id] } });
     await load();
-    return flash('Detached.');
+    return flash('Staccato.');
   }
   const pre = e.target.closest('[data-prefill]');
   if (pre) {
@@ -202,7 +202,7 @@ document.addEventListener('click', async (e) => {
 
 /* -------------------------------------------------------------- onboard */
 
-const KIND_LABEL = { single: 'solo', couple: 'couple', group: 'group' };
+const KIND_LABEL = { single: 'singolo', couple: 'coppia', group: 'gruppo' };
 
 /** Mirrors the server's deriveKind(): 1 solo, 2 couple, 3+ group. */
 function kindFor(n) {
@@ -212,12 +212,12 @@ function kindFor(n) {
 /** What the costume will be saved as, given the guests picked so far. */
 function describeSelection() {
   const n = selected.length;
-  if (n === 0) return 'start typing a name…';
+  if (n === 0) return 'inizia a digitare un nome…';
   if (n === 1) {
-    const name = S.guests.find((g) => g.id === selected[0])?.name || 'this guest';
-    return `1 guest (${name}) → saved as a solo`;
+    const name = S.guests.find((g) => g.id === selected[0])?.name || 'questo ospite';
+    return `1 ospite (${name}) → salvato come singolo`;
   }
-  return `${n} guests → saved as a ${KIND_LABEL[kindFor(n)]}`;
+  return `${n} ospiti → salvato come ${KIND_LABEL[kindFor(n)]}`;
 }
 
 $('ac').addEventListener('input', async (e) => {
@@ -231,10 +231,10 @@ $('ac').addEventListener('input', async (e) => {
         const c = S.costumes.find((x) => x.id === g.costume_id);
         return `<div class="ac-item" data-pick="${g.id}">
           <span>${esc(g.name)}</span>
-          <small>${c ? 'in ' + esc(c.name) : 'free'}</small>
+          <small>${c ? 'in ' + esc(c.name) : 'libero'}</small>
         </div>`;
       }).join('')
-    : `<div class="ac-item"><small>No match</small></div>`;
+    : `<div class="ac-item"><small>Nessun risultato</small></div>`;
   list.classList.add('show');
 });
 
@@ -257,8 +257,8 @@ function paintChips() {
     .map((id) => {
       const g = S.guests.find((x) => x.id === id);
       const c = S.costumes.find((x) => x.id === g?.costume_id);
-      return `<span class="chip ${c ? 'self' : ''}">${esc(g?.name || id)}${c ? ' · already in ' + esc(c.name) : ''}
-        <button data-unpick="${id}" title="remove">✕</button></span>`;
+      return `<span class="chip ${c ? 'self' : ''}">${esc(g?.name || id)}${c ? ' · già in ' + esc(c.name) : ''}
+        <button data-unpick="${id}" title="rimuovi">✕</button></span>`;
     }).join('');
 }
 
@@ -305,9 +305,9 @@ $('photoInput').addEventListener('change', (e) => {
 const MAX_UPLOAD_MB = 25;
 
 function handlePhoto(file) {
-  if (!file.type.startsWith('image/')) return flash('That file is not an image.', 'err');
+  if (!file.type.startsWith('image/')) return flash('Questo file non è un\'immagine.', 'err');
   if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
-    return flash(`That photo is ${(file.size / 1048576).toFixed(1)} MB — pick something under ${MAX_UPLOAD_MB} MB.`, 'err');
+    return flash(`Questa foto pesa ${(file.size / 1048576).toFixed(1)} MB — scegline una sotto i ${MAX_UPLOAD_MB} MB.`, 'err');
   }
   const reader = new FileReader();
   reader.onload = () => {
@@ -323,7 +323,7 @@ function handlePhoto(file) {
       $('previewNote').textContent =
         `${file.name} · ${probe.width}×${probe.height} (${mp} MP) · ${(file.size / 1048576).toFixed(1)} MB`;
     };
-    probe.onerror = () => flash('Could not read that image.', 'err');
+    probe.onerror = () => flash('Impossibile leggere questa immagine.', 'err');
     probe.src = reader.result;
   };
   reader.readAsDataURL(file);
@@ -363,14 +363,14 @@ $('clearForm').addEventListener('click', () => {
 $('saveCostume').addEventListener('click', async () => {
   // No type to pick and nothing to get wrong: the headcount decides.
   const ids = [...selected];
-  if (!ids.length) return flash('Pick at least one guest first.', 'err');
+  if (!ids.length) return flash('Prima scegli almeno un ospite.', 'err');
   const kind = kindFor(ids.length);
 
   const names = ids.map((id) => S.guests.find((g) => g.id === id)?.name).filter(Boolean);
   const movers = ids.filter((id) => S.guests.find((g) => g.id === id)?.costume_id);
   if (movers.length && !confirm(
-    `${movers.map((id) => S.guests.find((g) => g.id === id).name).join(', ')} already belong to a costume.\n` +
-    'Move them to this one? Their old costume will be left without them.')) return;
+    `${movers.map((id) => S.guests.find((g) => g.id === id).name).join(', ')} fanno già parte di un costume.\n` +
+    'Spostarli in questo? Il loro vecchio costume resterebbe senza di loro.')) return;
 
   const btn = $('saveCostume');
   btn.disabled = true;
@@ -386,7 +386,7 @@ $('saveCostume').addEventListener('click', async () => {
     // Reset before the reload so a failed load can't leave stale input behind.
     resetForm();
     await load();
-    flash(`Saved — ${names.join(', ')} onboarded as a ${KIND_LABEL[kind]}.`);
+    flash(`Salvato — ${names.join(', ')} registrati come ${KIND_LABEL[kind]}.`);
     $('ac').focus();   // next guest is already walking up
   } catch (e) {
     flash(e.message, 'err');
@@ -408,19 +408,19 @@ function paintCostumes() {
       <td><span class="badge kind">${EMOJI[c.kind]}${c.kind === 'group' ? ` ${c.members.length}` : ''}</span></td>
       <td>${esc(c.members.map((m) => m.name).join(', ') || '—')}</td>
       <td><span class="badge">${n}</span></td>
-      <td style="text-align:right"><button class="small danger" data-delcostume="${c.id}">Delete</button></td>
+      <td style="text-align:right"><button class="small danger" data-delcostume="${c.id}">Elimina</button></td>
     </tr>`;
-  }).join('') || `<tr><td colspan="6" class="empty">Nothing onboarded yet.</td></tr>`;
+  }).join('') || `<tr><td colspan="6" class="empty">Ancora nessun costume registrato.</td></tr>`;
 }
 
 document.addEventListener('click', async (e) => {
   const d = e.target.closest('[data-delcostume]');
   if (!d) return;
   const c = S.costumes.find((x) => x.id === Number(d.dataset.delcostume));
-  if (!confirm(`Delete “${c.name}”?\n\nIts members go back to the un-onboarded list and votes for it are deleted.`)) return;
+  if (!confirm(`Eliminare «${c.name}»?\n\nI suoi membri tornano nell'elenco dei non registrati e i voti per esso vengono eliminati.`)) return;
   await api(`/api/admin/costumes/${c.id}/delete`, { method: 'POST' });
   await load();
-  flash('Costume deleted.');
+  flash('Costume eliminato.');
 });
 
 /* --------------------------------------------------------------- tokens */
@@ -428,7 +428,7 @@ document.addEventListener('click', async (e) => {
 $('genTokens').addEventListener('click', async () => {
   const out = await api('/api/admin/tokens/generate', { method: 'POST', body: {} });
   await load();
-  flash(out.issued ? `Issued ${out.issued} token(s).` : out.message, out.issued ? 'ok' : 'info');
+  flash(out.issued ? `Emessi ${out.issued} token.` : out.message, out.issued ? 'ok' : 'info');
 });
 
 function paintTokens() {
@@ -436,12 +436,12 @@ function paintTokens() {
     const c = S.costumes.find((x) => x.id === g.costume_id);
     return `<tr>
       <td class="mono"><b>${g.token ? esc(g.token.slice(0, 4) + '-' + g.token.slice(4)) : '<span class="sub">—</span>'}</b></td>
-      <td>${esc(g.name)}${g.onboarded ? '' : ' <span class="badge">not onboarded</span>'}</td>
+      <td>${esc(g.name)}${g.onboarded ? '' : ' <span class="badge">non registrato</span>'}</td>
       <td>${c ? esc(c.name) : '<span class="sub">—</span>'}</td>
       <td><span>${esc(g.votes ?? 0)}/3</span></td>
-      <td style="text-align:right">${g.token ? `<button class="small" data-copy="${esc(g.token)}">Copy</button>` : ''}</td>
+      <td style="text-align:right">${g.token ? `<button class="small" data-copy="${esc(g.token)}">Copia</button>` : ''}</td>
     </tr>`;
-  }).join('') || `<tr><td colspan="5" class="empty">No guests loaded yet.</td></tr>`;
+  }).join('') || `<tr><td colspan="5" class="empty">Ancora nessun ospite caricato.</td></tr>`;
 }
 
 document.addEventListener('click', async (e) => {
@@ -450,7 +450,7 @@ document.addEventListener('click', async (e) => {
   const token = c.dataset.copy;
   try {
     await navigator.clipboard.writeText(`${token.slice(0, 4)}-${token.slice(4)}`);
-    flash(`Copied ${token.slice(0, 4)}-${token.slice(4)}`);
+    flash(`Copiato ${token.slice(0, 4)}-${token.slice(4)}`);
   } catch {
     flash(`Token: ${token.slice(0, 4)}-${token.slice(4)}`, 'info');
   }
@@ -461,7 +461,7 @@ document.addEventListener('click', async (e) => {
 function paintResults() {
   const box = $('adminResults');
   const t = S.tally;
-  $('turnout').textContent = `${t.turnout} of ${S.stats.onboarded} onboarded guests have voted · ${t.total_votes} votes cast`;
+  $('turnout').textContent = `${t.turnout} di ${S.stats.onboarded} ospiti registrati hanno votato · ${t.total_votes} voti espressi`;
   box.innerHTML = t.categories.map((cat) => `
     <h3 style="margin-top:16px">${esc(cat.label)}</h3>
     <div class="podium">
@@ -473,15 +473,15 @@ function paintResults() {
             <small>${esc(r.costume.members.join(', '))}</small></span>
           <span class="bar"><i style="width:${cat.results[0].votes ? (r.votes / cat.results[0].votes) * 100 : 0}%"></i></span>
           <b>${r.votes}</b>
-        </div>`).join('') || '<p class="empty">No votes in this category yet.</p>'}
+        </div>`).join('') || '<p class="empty">Ancora nessun voto in questa categoria.</p>'}
     </div>`).join('');
 }
 
 $('resetVotes').addEventListener('click', async () => {
-  if (!confirm('Delete every vote cast so far? This cannot be undone.')) return;
+  if (!confirm('Eliminare tutti i voti espressi finora? Non si può annullare.')) return;
   await api('/api/admin/votes/reset', { method: 'POST' });
   await load();
-  flash('All votes deleted.');
+  flash('Tutti i voti eliminati.');
 });
 
 /* ------------------------------------------------------------- settings */
@@ -510,7 +510,7 @@ $('toggleVoting').addEventListener('click', async () => {
   btn.disabled = true;
   try {
     await saveSettings({ voting_open: opening });
-    flash(opening ? 'Voting is open — guests can vote now.' : 'Voting closed. Results are public.', 'ok');
+    flash(opening ? 'Le votazioni sono aperte — gli ospiti possono votare ora.' : 'Votazioni chiuse. I risultati sono pubblici.', 'ok');
   } catch (e) {
     flash(e.message, 'err');
   } finally {
@@ -522,21 +522,21 @@ $('saveClose').addEventListener('click', () => {
   const v = $('closesAt').value;
   saveSettings({ closes_at: v ? new Date(v).toISOString() : '', voting_open: true })
     .then(() => flash(v
-      ? `Close time saved — voting closes at ${new Date(v).toLocaleString()}.`
-      : 'Deadline cleared — voting is open until you close it by hand.', 'ok'))
+      ? `Orario di chiusura salvato — le votazioni chiudono alle ${new Date(v).toLocaleString()}.`
+      : 'Scadenza rimossa — le votazioni restano aperte finché non le chiudi a mano.', 'ok'))
     .catch((e) => flash(e.message, 'err'));
 });
 
-for (const [id, ms, label] of [['closeIn1h', 3600e3, '1 hour'], ['closeIn30m', 1800e3, '30 minutes']]) {
+for (const [id, ms, label] of [['closeIn1h', 3600e3, '1 ora'], ['closeIn30m', 1800e3, '30 minuti']]) {
   $(id).addEventListener('click', () => {
     saveSettings({ closes_at: new Date(Date.now() + ms).toISOString(), voting_open: true })
-      .then(() => flash(`Voting is open and will close in ${label}.`, 'ok'))
+      .then(() => flash(`Le votazioni sono aperte e chiuderanno tra ${label}.`, 'ok'))
       .catch((e) => flash(e.message, 'err'));
   });
 }
 $('saveEvent').addEventListener('click', () => {
   saveSettings({ event_name: $('eventName').value })
-    .then(() => flash('Event name saved.'))
+    .then(() => flash('Nome dell\'evento salvato.'))
     .catch((e) => flash(e.message, 'err'));
 });
 
@@ -548,9 +548,9 @@ $('savePassword').addEventListener('click', async () => {
 
   // Validate locally so a typo in the repeat field never reaches the server —
   // the server can't tell a typo from a deliberate change.
-  if (next.length < 8) return flash('New password must be at least 8 characters.', 'err');
-  if (next !== confirm) return flash('The two new passwords do not match.', 'err');
-  if (!current) return flash('Enter your current password.', 'err');
+  if (next.length < 8) return flash('La nuova password deve avere almeno 8 caratteri.', 'err');
+  if (next !== confirm) return flash('Le due nuove password non coincidono.', 'err');
+  if (!current) return flash('Inserisci la password attuale.', 'err');
 
   const btn = $('savePassword');
   btn.disabled = true;
@@ -561,8 +561,8 @@ $('savePassword').addEventListener('click', async () => {
     });
     for (const id of ['pwCurrent', 'pwNext', 'pwConfirm']) $(id).value = '';
     flash(out.sessions_invalidated
-      ? 'Password changed and all other devices signed out.'
-      : 'Password changed.', 'ok');
+      ? 'Password cambiata e tutti gli altri dispositivi disconnessi.'
+      : 'Password cambiata.', 'ok');
   } catch (e) {
     flash(e.message, 'err');
   } finally {
@@ -585,7 +585,7 @@ $('tabs').addEventListener('click', (e) => {
   if (b) goTab(b.dataset.tab);
 });
 
-$('refresh').addEventListener('click', () => load().then(() => flash('Refreshed.')));
+$('refresh').addEventListener('click', () => load().then(() => flash('Aggiornato.')));
 $('logout').addEventListener('click', async () => {
   await api('/api/admin/logout', { method: 'POST' });
   location.href = '/admin/login';
@@ -601,11 +601,11 @@ load()
   .catch((e) => {
     // A silent failure here looks like "no data", which is the worst possible
     // thing to show the host mid-party. Say so.
-    if (e.message !== 'unauthorised') flash(`Could not load the console: ${e.message}`, 'err');
+    if (e.message !== 'unauthorised') flash(`Impossibile caricare la console: ${e.message}`, 'err');
   });
 setInterval(() => {
   if (document.hidden) return;
   load().catch((e) => {
-    if (e.message !== 'unauthorised') flash(`Refresh failed: ${e.message}`, 'err');
+    if (e.message !== 'unauthorised') flash(`Aggiornamento non riuscito: ${e.message}`, 'err');
   });
 }, 15000);
