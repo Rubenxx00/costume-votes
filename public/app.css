@@ -289,6 +289,39 @@ details.card label { margin-top: 4px; }
 .btn.cast { font-size: 16px; padding: 12px 22px; }
 body.has-castbar .wrap { padding-bottom: 108px; }
 
+/* Confirm-before-submit overlay — same dismissal conventions as the
+   lightbox: Escape, backdrop tap or "Annulla" all cancel. */
+.confirm {
+  position: fixed; inset: 0; z-index: 90;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, .72); padding: 20px;
+}
+.confirm:not(.hidden) { display: flex; }
+.confirm-card {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 20px; width: 100%; max-width: 430px;
+}
+.confirm-card h2 { margin-bottom: 6px; }
+.confirm-warn { color: var(--red); font-size: 13.5px; margin-top: 2px; }
+.confirm-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
+.confirm-list li {
+  display: flex; align-items: center; gap: 10px;
+  background: #ffffff0a; border: 1px solid var(--line);
+  border-radius: 10px; padding: 9px 12px; font-size: 14px;
+}
+.confirm-list .cf-emoji { font-size: 17px; flex: 0 0 auto; }
+.confirm-list .cf-cat {
+  color: var(--muted); font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .4px; flex: 0 0 auto;
+}
+.confirm-list .cf-name {
+  flex: 1; min-width: 0; text-align: right; font-weight: 700;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.confirm-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+body.modal-open { overflow: hidden; }
+
 /* --------------------------------------------------------------- results */
 .podium { display: flex; flex-direction: column; gap: 10px; }
 .rank { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--card-2); }

@@ -181,7 +181,7 @@ function section(cat, votes, votable, byId) {
     </div>
     ${selectedDisplay}
     ${locked
-      ? `<p class="pickline">La tua scelta: <b>${esc(byId.get(voted.costume_id)?.name || '—')}</b> <span class="final">(definitiva)</span></p>`
+      ? `<p class="pickline">La tua scelta: <b>${esc(byId.get(voted.costume_id)?.name || '—')}</b></p>`
       : picked
         ? `<p class="pickline">Selezionato: <b>${esc(byId.get(picked)?.name || '—')}</b></p>`
         : ''}
@@ -265,6 +265,28 @@ function toggleCategory(key) {
   render();
 }
 window.toggleCategory = toggleCategory;
+
+/** Confirm dialog: show exactly what will be locked in before the send. */
+function openConfirm() {
+  const picks = state.categories.filter((cat) => !state.votes[cat.key] && pending[cat.key] != null);
+  if (!picks.length) return;
+  const byId = new Map(state.costumes.map((c) => [c.id, c]));
+  $('confirmList').innerHTML = picks.map((cat) => `
+    <li>
+      <span class="cf-emoji">${CAT_EMOJI[cat.key] || '🎃'}</span>
+      <span class="cf-cat">${esc(cat.label)}</span>
+      <span class="cf-name">${esc(byId.get(pending[cat.key])?.name || '—')}</span>
+    </li>`).join('');
+  $('confirm').classList.remove('hidden');
+  document.body.classList.add('modal-open');
+  $('confirmOk').focus();
+}
+function closeConfirm() {
+  $('confirm').classList.add('hidden');
+  document.body.classList.remove('modal-open');
+  const btn = $('castBtn');
+  if (!btn.disabled) btn.focus();
+}
 
 /** Commit every staged pick at once. Votes are final the moment this lands. */
 async function submitVote() {
@@ -352,7 +374,35 @@ document.addEventListener('click', (e) => {
   }
 });
 
-$('castBtn').addEventListener('click', submitVote);
+// The cast button opens the confirmation instead of submitting directly —
+// one tap on a crowded dance floor is one tap too few for a final vote.
+$('castBtn').addEventListener('click', () => {
+  if ($('castBtn').disabled) return;
+  openConfirm();
+});
+
+$('confirmOk').addEventListener('click', async () => {
+  $('confirmOk').disabled = true;
+  $('confirmOk').textContent = 'Invio in corso…';
+  try {
+    await submitVote();
+  } finally {
+    closeConfirm();
+    $('confirmOk').disabled = false;
+    $('confirmOk').textContent = 'Conferma e invia';
+  }
+});
+
+$('confirmCancel').addEventListener('click', closeConfirm);
+
+// Tap the dark backdrop to dismiss, same as the photo lightbox.
+$('confirm').addEventListener('click', (e) => {
+  if (e.target === $('confirm')) closeConfirm();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('confirm').classList.contains('hidden')) closeConfirm();
+});
 
 $('signout').addEventListener('click', () => {
   sessionStorage.removeItem('cv_token');

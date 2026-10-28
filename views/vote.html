@@ -36,6 +36,20 @@
     <button class="btn primary cast" id="castBtn" disabled>Invia</button>
   </div>
 
+  <!-- Confirmation before the irreversible submit — mirrors the lightbox
+       overlay pattern: Escape / backdrop / Annulla all dismiss. -->
+  <div class="confirm hidden" id="confirm" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="confirm-card">
+      <h2 id="confirmTitle">Confermi i tuoi voti?</h2>
+      <p class="confirm-warn">I voti sono <b>definitivi</b>: una volta inviati non potrai più cambiarli.</p>
+      <ul class="confirm-list" id="confirmList"></ul>
+      <div class="confirm-actions">
+        <button class="small" id="confirmCancel" type="button">Annulla</button>
+        <button class="btn primary cast" id="confirmOk" type="button">Conferma e invia</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 <script src="/lightbox.js"></script>
 <script src="/vote.js"></script>
