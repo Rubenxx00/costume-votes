@@ -53,9 +53,9 @@ CREATE INDEX IF NOT EXISTS idx_votes_cat   ON votes(category);
 `);
 
 export const CATEGORIES = [
-  { key: 'beautiful', label: 'Most Beautiful' },
-  { key: 'scary', label: 'Most Scary' },
-  { key: 'original', label: 'Most Original' },
+  { key: 'beautiful', label: 'Il migliore' },
+  { key: 'scary', label: 'Più spaventoso' },
+  { key: 'original', label: 'Più originale' },
 ];
 
 export const KINDS = {

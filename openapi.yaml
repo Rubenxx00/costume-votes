@@ -403,7 +403,7 @@ components:
       properties:
         category:
           type: string
-          enum: [beautiful, scary, couple]
+          enum: [beautiful, scary, original]
         costume_id:
           type: integer
         undo:
@@ -561,7 +561,7 @@ components:
       properties:
         key:
           type: string
-          enum: [beautiful, scary, couple]
+          enum: [beautiful, scary, original]
         label:
           type: string
     TokenGenerateResponse:

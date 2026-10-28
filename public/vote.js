@@ -1,5 +1,5 @@
 const $ = (id) => document.getElementById(id);
-const CAT_EMOJI = { beautiful: '👑', scary: '💀', original: '🎨' };
+const CAT_EMOJI = { beautiful: '🏆', scary: '🏆', original: '🧠' };
 const EMOJI = { single: '🧍', couple: '💞', group: '👥' };
 
 let TOKEN = sessionStorage.getItem('cv_token') || '';
