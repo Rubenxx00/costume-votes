@@ -327,15 +327,8 @@ paths:
               example: attachment; filename="costume-vote-tokens.csv"
   /api/admin/results:
     get:
-      summary: Get public results
+      summary: Get results (admin only — guests hold no endpoint to read them)
       operationId: getResults
-      parameters:
-        - name: reveal
-          in: query
-          required: false
-          schema:
-            type: boolean
-            description: Reveal results early
       responses:
         '200':
           description: Tally results
@@ -343,8 +336,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResultsResponse'
-        '403':
-          description: Results hidden
   /api/admin/settings:
     post:
       summary: Set voting window and event name

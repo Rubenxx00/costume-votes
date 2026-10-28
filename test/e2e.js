@@ -307,12 +307,18 @@ Ivan Petrov
   ok('unknown category rejected',
     (await call('/api/vote', { method: 'POST', body: { token: tok['Alice Rossi'], category: 'best', costume_id: coupleId } })).status === 400);
 
-  log('\n── results hiding + closing ──');
-  ok('public results hidden while open', (await call('/api/results')).status === 403);
+  log('\n── results are admin-only ──');
+  // The guest results endpoint is gone entirely: no payload, no `?reveal` back
+  // door while voting is open, nothing after close. Guests watch the projector.
+  const anonRes = await fetch(BASE + '/api/results', { redirect: 'manual' });
+  ok('no results endpoint for guests', anonRes.status === 404);
+  const resPage = await fetch(BASE + '/results', { redirect: 'manual' });
+  ok('results page redirects anonymous to login',
+    resPage.status === 302 && resPage.headers.get('location') === '/admin/login');
   const adm = (await call('/api/admin/results')).json;
   ok('admin results visible while open', adm.total_votes >= 4);
-  // Regression: the admin console and public board both render member names
-  // straight off the tally payload.
+  // Regression: the admin console renders member names straight off the tally
+  // payload; the projector board reads the same shape.
   ok('every tallied costume carries its member list',
     adm.categories.every((c) => c.results.every((r) => Array.isArray(r.costume.members))),
     JSON.stringify(adm.categories[0].results.map((r) => r.costume)));
@@ -328,11 +334,11 @@ Ivan Petrov
   ok('voting closed after deadline', (await call('/api/status')).json.voting.open === false);
   ok('vote rejected after close',
     (await call('/api/vote', { method: 'POST', body: { token: tok['Frank Miller'], category: 'scary', costume_id: soloId } })).status === 403);
-  const pub = await call('/api/results');
-  ok('public results visible after close', pub.status === 200);
-  ok('public board costumes carry members too',
+  const pub = await call('/api/admin/results');
+  ok('admin results visible after close (no reveal needed)', pub.status === 200);
+  ok('tallied costumes carry members after close',
     pub.json.categories.every((c) => c.results.every((r) => Array.isArray(r.costume.members))));
-  ok('public board member join works',
+  ok('member join works after close',
     pub.json.categories[0].results.every((r) => typeof r.costume.members.join(', ') === 'string'));
   ok('all three categories present', pub.json.categories.length === 3);
   ok('top of beautiful has 1 vote', pub.json.categories[0].results[0].votes >= 1, JSON.stringify(pub.json.categories[0].results));

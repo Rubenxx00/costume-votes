@@ -26,10 +26,10 @@ async function poll() {
         <p class="sub">Tieniti pronto :)</p>`;
     } else if (s.voting.reason === 'closed-by-host') {
       box.innerHTML = `<h3>Le votazioni sono chiuse</h3>
-        <p class="sub">Grazie per aver votato — i risultati sono sul proiettore, oppure <a href="/results">apri la bacheca</a>.</p>`;
+        <p class="sub">Grazie per aver votato — i risultati sono sul proiettore.</p>`;
     } else {
       box.innerHTML = `<h3>Le votazioni si sono chiuse</h3>
-        <p class="sub">Guarda il proiettore per i risultati — oppure <a href="/results">apri la bacheca dei risultati</a>.</p>`;
+        <p class="sub">Guarda il proiettore per i risultati.</p>`;
     }
   } catch {
     /* offline at the venue: stay quiet, the host can still hand out tokens */

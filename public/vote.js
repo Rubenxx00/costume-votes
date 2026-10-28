@@ -77,8 +77,8 @@ function render() {
     const body = notStarted
       ? 'L\'host sta ancora registrando i costumi. Questa pagina funzionerà appena apriranno le votazioni — basta ricaricare.'
       : voting.reason === 'deadline-passed'
-        ? 'La scadenza è passata. <a href="/results">Vedi i risultati</a>.'
-        : 'L\'host ha chiuso le votazioni. <a href="/results">Vedi i risultati</a>.';
+        ? 'La scadenza è passata. I risultati saranno annunciati presto!'
+        : 'L\'host ha chiuso le votazioni. I risultati saranno annunciati presto!';
     $('body').innerHTML = `<div class="card"><h2>${heading}</h2>
       <p class="sub">${body}</p></div>`;
     $('doneCard').classList.add('hidden');

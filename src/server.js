@@ -45,7 +45,7 @@ app.use('/api', guestRouter);
 app.get('/', (req, res) => res.sendFile(path.join(VIEWS_DIR, 'landing.html')));
 
 app.get('/vote', (req, res) => res.sendFile(path.join(VIEWS_DIR, 'vote.html')));
-app.get('/results', (req, res) => res.sendFile(path.join(VIEWS_DIR, 'results.html')));
+app.get('/results', requireAdminPage, (req, res) => res.sendFile(path.join(VIEWS_DIR, 'results.html')));
 
 app.get('/admin/login', (req, res) =>
   isAdmin(req) ? res.redirect('/admin') : res.sendFile(path.join(VIEWS_DIR, 'login.html'))

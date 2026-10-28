@@ -69,7 +69,7 @@ Tunables live in `PHOTO_SIZES` in `src/config.js`.
 4. **Open voting** — the big button above the tabs. Voting starts closed, so
    loading names and taking photos can't be interrupted by early votes. Press it
    when everyone is registered; press it again (or let a deadline pass) to close.
-5. **Results** — `/results` is the projector-friendly board, public once voting closes.
+5. **Results** — `/results` is the projector-friendly board. It is admin-only: a guest navigating there is sent to the login screen, and results are never exposed to guests (they watch the projector).
 
 ### As a guest
 
@@ -215,7 +215,7 @@ node test/seed.js http://localhost:4400 demo1234   # 10 guests, 4 costumes, vote
 | `GET` | `/api/status` | anyone | Voting state (`open`, `closesAt`, `reason`) + event name |
 | `GET` | `/api/me?token=` | guest | Their ballot: costumes, own costume, current votes |
 | `POST` | `/api/vote` | guest | `{token, category, costume_id}`, `undo:"1"` to clear |
-| `GET` | `/api/results` | anyone | 403 until voting closes |
+| `GET` | `/api/admin/results` | admin | Tally of all votes (guests have no results endpoint) |
 | `POST` | `/api/admin/login` | admin | Sets the session cookie |
 | `POST` | `/api/admin/password` | admin | `{current, next, logout_others}` — `logout_others` also invalidates every issued session cookie |
 | `GET` | `/api/admin/overview` | admin | Everything the console renders from |

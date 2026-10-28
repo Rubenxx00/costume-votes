@@ -91,32 +91,6 @@ router.get('/status', (req, res) =>
     event_name: getSetting('event_name') || 'Costume Party',
   }));
 
-/** Public results board (shown on the projector after voting closes). */
-router.get('/results', (req, res) => {
-  const state = isVotingOpen();
-  if (state.open && !req.query.reveal) {
-    return res.status(403).json({ error: 'Results are hidden until voting closes' });
-  }
-  const costumes = new Map(
-    costumesList().map((c) => [c.id, { ...c, members: membersOf(c.id).map((m) => m.name) }])
-  );
-  const rows = db.prepare('SELECT category, costume_id, COUNT(*) AS n FROM votes GROUP BY category, costume_id').all();
-  res.json({
-    voting: state,
-    event_name: getSetting('event_name') || 'Costume Party',
-    turnout: db.prepare('SELECT COUNT(DISTINCT guest_id) AS n FROM votes').get().n,
-    total_votes: rows.reduce((a, r) => a + r.n, 0),
-    categories: CATEGORIES.map((c) => ({
-      ...c,
-      results: rows
-        .filter((r) => r.category === c.key)
-        .map((r) => ({ costume: costumes.get(r.costume_id) || null, votes: r.n }))
-        .filter((r) => r.costume)
-        .sort((a, b) => b.votes - a.votes || a.costume.name.localeCompare(b.costume.name)),
-    })),
-  });
-});
-
-function costumesList() {
-  return db.prepare('SELECT * FROM costumes ORDER BY id').all();
-}
+// Results are admin-only. Guests hold no endpoint to read the tally (the host
+// projects it from the admin console or /results once logged in), so there is
+// no public `/api/results` and no way to reveal it early with `?reveal`.

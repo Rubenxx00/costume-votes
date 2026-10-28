@@ -30,7 +30,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 async function load() {
-  const res = await fetch('/api/results');
+  const res = await fetch('/api/admin/results');
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     $('board').innerHTML = '';
