@@ -157,6 +157,19 @@ body.lightbox-open { overflow: hidden; }
 .chip button { background: none; border: 0; padding: 0 0 0 2px; color: var(--muted); font-size: 16px; line-height: 1; }
 .chip.self { border-color: var(--accent); color: var(--accent-2); background: #ff7a1a1a; }
 
+/* Vote progress chip in the header — at-a-glance how many ballots are in. */
+.votebadge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #ffffff12; border: 1px solid var(--line); border-radius: 999px;
+  padding: 4px 12px; margin-bottom: 8px;
+  font-size: 13px; font-weight: 700; color: var(--muted);
+}
+.votebadge.done {
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 45%, transparent);
+  background: #35c07f1a;
+}
+
 details.card summary { cursor: pointer; font-weight: 600; color: var(--muted); }
 details.card summary:hover { color: var(--text); }
 details.card[open] summary { margin-bottom: 12px; color: var(--text); }

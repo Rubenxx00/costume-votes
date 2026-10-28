@@ -54,6 +54,7 @@ function hideCastBar() {
 
 function render() {
   const { guest, categories, costumes, votes, voting } = state;
+  const total = categories.length;
 
   const unboarded = guest.costume_id == null;
   $('who').innerHTML = `Stai votando come <b>${esc(guest.name)}</b>` +
@@ -61,8 +62,16 @@ function render() {
       ? ` · <b>solo votante</b>`
       : ` · costume: <b>${esc(state.myCostume.name)}</b>`);
 
+  // At-a-glance progress in the header: how many ballots are already in.
+  $('voteStatus').innerHTML = state.remaining === 0
+    ? `<span class="chip votebadge done">✓ ${state.votes_cast}/${total} voti</span>`
+    : state.votes_cast > 0
+      ? `<span class="chip votebadge">${state.votes_cast}/${total} voti</span>`
+      : '';
+
   if (!voting.open) {
     hideCastBar();
+    $('voteStatus').innerHTML = '';
     const notStarted = voting.reason === 'not-opened';
     const heading = notStarted ? 'Le votazioni non sono ancora iniziate' : 'Le votazioni sono chiuse';
     const body = notStarted
@@ -87,7 +96,7 @@ function render() {
   if (!expandedCategory && editable.length) expandedCategory = editable[0].key;
 
   const introLine = state.remaining === 0
-    ? 'Hai espresso tutti i <b>3</b> voti. Ottimo 🎉 — puoi comunque sfogliare i costumi.'
+    ? `🎉 Hai votato in tutte e <b>${total}</b> le categorie. I voti sono definitivi: non puoi più cambiarli.`
     : `Scegli un costume in ogni categoria — tocca per selezionarlo, tocca di nuovo per deselezionarlo. Quando sei pronto, premi <b>Invia</b>. I tuoi voti sono definitivi.`;
 
   const ownCard = unboarded
@@ -111,18 +120,25 @@ function render() {
 
   $('doneCard').classList.toggle('hidden', state.remaining > 0);
 
-  // Submit bar: spells out exactly how many picks are queued.
-  const allPicked = state.categories.every((cat) => state.votes[cat.key] || pending[cat.key] != null);
-
-  showCastBar();
-  $('castBtn').disabled = !allPicked || submitting;
-  if (allPicked) {
-    $('castHint').textContent = 'Tutte e 3 le scelte pronte — non ancora inviate';
-    $('castBtn').textContent = 'Invia 3 voti';
+  // Submit bar: exists only while there are votes still to cast. Once every
+  // category is voted the button vanishes — nothing left to send, and the
+  // green header chip + "votato" badges say the rest.
+  if (state.remaining === 0) {
+    hideCastBar();
   } else {
-    const picked = state.categories.filter((cat) => state.votes[cat.key] || pending[cat.key] != null).length;
-    $('castHint').textContent = `Scegli un costume in tutte e 3 le categorie (${picked}/3)`;
-    $('castBtn').textContent = 'Invia';
+    showCastBar();
+    // Spells out exactly how many picks are queued.
+    const allPicked = state.categories.every((cat) => state.votes[cat.key] || pending[cat.key] != null);
+
+    $('castBtn').disabled = !allPicked || submitting;
+    if (allPicked) {
+      $('castHint').textContent = `Tutte e ${total} le scelte pronte — non ancora inviate`;
+      $('castBtn').textContent = `Invia ${total} voti`;
+    } else {
+      const picked = state.categories.filter((cat) => state.votes[cat.key] || pending[cat.key] != null).length;
+      $('castHint').textContent = `Scegli un costume in tutte e ${total} le categorie (${picked}/${total})`;
+      $('castBtn').textContent = 'Invia';
+    }
   }
 }
 
@@ -134,10 +150,10 @@ function section(cat, votes, votable, byId) {
   const collapsed = cat.key !== expandedCategory;
 
   const badge = locked
-    ? '<span class="badge ok">votato</span>'
+    ? '<span class="badge ok">✓ votato</span>'
     : picked
       ? '<span class="badge kind">selezionato</span>'
-      : '<span class="badge">non selezionato</span>';
+      : '<span class="badge">da scegliere</span>';
 
   // When collapsed, show just the selected costume thumbnail + name
   const selectedDisplay = collapsed
